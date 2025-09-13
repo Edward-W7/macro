@@ -27,7 +27,7 @@ interface TargetMacros {
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
-  // Updated userProfile state to use the new simplified structure
+  // Initialize state with default/fallback values
   const [userProfile, setUserProfile] = useState({
     height: 180,
     weight: 75,
@@ -40,6 +40,38 @@ export default function Dashboard() {
     showPopup('Welcome back!');
   }, [showPopup]);
 
+  // --- CORRECTED: Load user data from localStorage on component mount ---
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedData = localStorage.getItem('questionnaire');
+      console.log("1. Raw data from localStorage:", savedData);
+
+      if (savedData) {
+        try {
+          const parsedData = JSON.parse(savedData);
+          console.log("2. Parsed data:", parsedData);
+
+          if (parsedData.height && parsedData.weight && parsedData.about) {
+            // Convert units from imperial (questionnaire) to metric (API)
+            const heightInInches = parseFloat(parsedData.height);
+            const weightInPounds = parseFloat(parsedData.weight);
+
+            const heightInCm = Math.round(heightInInches * 2.54);
+            const weightInKg = Math.round(weightInPounds * 0.453592);
+
+            setUserProfile({
+              height: heightInCm,
+              weight: weightInKg,
+              goals: parsedData.about // Map 'about' from questionnaire to 'goals'
+            });
+          }
+        } catch (error) {
+          console.error("Failed to parse questionnaire data from localStorage", error);
+        }
+      }
+    }
+  }, []); // Empty dependency array ensures this runs only once
+
   const [lockedMeals, setLockedMeals] = useState<{ [mealTime: string]: boolean }>({});
 
   const LockIcon = ({ locked }: { locked: boolean }) => (
@@ -50,7 +82,7 @@ export default function Dashboard() {
         cursor: 'pointer',
         transition: 'transform 0.2s',
         transform: locked ? 'scale(1.2) rotate(-10deg)' : 'scale(1)',
-        color: locked ? colors.accent : colors.secondary,
+        color: locked ? '#6366f1' : '#a1a1aa',
         verticalAlign: 'middle',
       }}
       aria-label={locked ? 'Unlock meal' : 'Lock meal'}
@@ -156,65 +188,69 @@ export default function Dashboard() {
     setMealData([]); // Clear previous meals on reroll
     showPopup('Generating your new plan...');
 
-    try {
-      // Step 1: Call the generate-macros API with the user's profile
-      const macroResponse = await fetch('/api/generate-macros', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userProfile),
-      });
+    // Console log to show the data being sent
+    console.log("--- Sending User Data to API ---");
+    console.log(userProfile);
+    console.log("--------------------------------");
 
-      if (!macroResponse.ok) {
-        const errorData = await macroResponse.json();
-        throw new Error(errorData.error.message || 'Failed to fetch macros.');
-      }
+    // Step 1: Call the generate-macros API with the user's profile
+    const macroResponse = await fetch('/api/generate-macros', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userProfile),
+    });
 
-      const calculatedMacros: TargetMacros = await macroResponse.json();
-
-      console.log('AI-Generated Macros:', calculatedMacros);
-
-      setTargetMacros(calculatedMacros);
-
-      // Step 2: Use the AI-calculated macros to call the meal generation API
-      const locks = getLockedMealsArray();
-      const targetsBody = {
-        money: 0,
-        macros: {
-          protein: calculatedMacros.protein_grams,
-          carbohydrates: calculatedMacros.carbs_grams,
-          fat: calculatedMacros.fat_grams,
-        },
-        calories: calculatedMacros.calories,
-        restrictions: chosenMealTimes,
-        exclusions: {
-          restaurants: exclusions.restaurants,
-          protein: exclusions.proteins,
-          dietary: exclusions.allergies,
-        },
-        locks,
-      };
-
-      const targetsResponse = await fetch('/api/targets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(targetsBody),
-      });
-
-      if (!targetsResponse.ok) {
-        throw new Error(`Meal generation failed: ${targetsResponse.statusText}`);
-      }
-
-      const mealPlanData = await targetsResponse.json();
-      setMealData(mealPlanData.bestResult);
-  // showPopup('Your new meal plan is ready!');
-
-    } catch (error) {
-      console.error("An error occurred during plan generation:", error);
-      showPopup(`Error: ${error instanceof Error ? error.message : 'An unknown error occurred.'}`);
-    } finally {
-      setIsLoading(false);
+    if (!macroResponse.ok) {
+      const errorData = await macroResponse.json();
+      // This will now throw an unhandled error if the response is not ok
+      throw new Error(errorData.error.message || 'Failed to fetch macros.');
     }
+
+    const calculatedMacros: TargetMacros = await macroResponse.json();
+
+    console.log('AI-Generated Macros:', calculatedMacros);
+
+    setTargetMacros(calculatedMacros);
+
+    // Step 2: Use the AI-calculated macros to call the meal generation API
+    const locks = getLockedMealsArray();
+    const targetsBody = {
+      money: 0,
+      macros: {
+        protein: calculatedMacros.protein_grams,
+        carbohydrates: calculatedMacros.carbs_grams,
+        fat: calculatedMacros.fat_grams,
+      },
+      calories: calculatedMacros.calories,
+      restrictions: chosenMealTimes,
+      exclusions: {
+        restaurants: exclusions.restaurants,
+        protein: exclusions.proteins,
+        dietary: exclusions.allergies,
+      },
+      locks,
+    };
+
+    const targetsResponse = await fetch('/api/targets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(targetsBody),
+    });
+
+    if (!targetsResponse.ok) {
+      // This will now throw an unhandled error if the response is not ok
+      throw new Error(`Meal generation failed: ${targetsResponse.statusText}`);
+    }
+
+    const mealPlanData = await targetsResponse.json();
+    setMealData(mealPlanData.bestResult);
+    showPopup('Your new meal plan is ready!');
+
+    // Note: If an error is thrown above, this line might not be reached,
+    // and the loading state will remain true. This is expected since error handling was removed.
+    setIsLoading(false);
   }
+
 
   useEffect(() => {
     const authed = isAuthenticated();
