@@ -206,7 +206,7 @@ export default function Dashboard() {
 
       const mealPlanData = await targetsResponse.json();
       setMealData(mealPlanData.bestResult);
-      showPopup('Your new meal plan is ready!');
+  // showPopup('Your new meal plan is ready!');
 
     } catch (error) {
       console.error("An error occurred during plan generation:", error);
@@ -548,14 +548,18 @@ export default function Dashboard() {
                         const locked = lockedMeals[mealTime] || false;
                         return (
                           <tr key={sortedIdx} style={{ borderBottom: '1px solid #3b3b4f', minHeight: '56px', height: '56px', verticalAlign: 'middle' }}>
-                            <td style={{ padding: '0.7rem', fontWeight: 600, verticalAlign: 'middle', height: '56px', display: 'flex', alignItems: 'center' }}>
-                              <span
-                                onClick={() => setLockedMeals(lm => ({ ...lm, [mealTime]: !lm[mealTime] }))}
-                                style={{ display: 'flex', alignItems: 'center' }}
-                              >
-                                <LockIcon locked={locked} />
-                              </span>
-                              {meal.dish_name || 'Unnamed Dish'}
+                            <td style={{ padding: '0.7rem', fontWeight: 600, verticalAlign: 'middle', height: '56px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
+                                <span
+                                  onClick={() => setLockedMeals(lm => ({ ...lm, [mealTime]: !lm[mealTime] }))}
+                                  style={{ display: 'flex', alignItems: 'center', marginRight: '0.7rem', cursor: 'pointer' }}
+                                >
+                                  <LockIcon locked={locked} />
+                                </span>
+                                <span style={{ flex: 1, textAlign: 'center', width: '100%' }}>
+                                  {meal.dish_name || 'Unnamed Dish'}
+                                </span>
+                              </div>
                             </td>
                             <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{mealTime}</td>
                             <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{meal.restaurant || 'Unknown'}</td>
