@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
   let relaxFats = 0;
   let selectedMeals: any[] = [];
   let bestResult: any[] = [];
-  let cycles = 10;
+  let cycles = 100;
   let bestScore = -10000;
   const lockedMeals = Array.isArray(locks) ? locks : [];
 
@@ -89,10 +89,14 @@ for (const locked of lockedMeals as LockedMeal[]) {
 
   // Exclude foods from specified restaurants, with specified proteins, and with specified dietary tags, in addition to blacklisted
   let prunedFoods = await Food.find({
-    blacklisted: { $ne: true },
-    ...(exclusions?.restaurants?.length > 0 ? { restaurant: { $nin: exclusions.restaurants } } : {}),
-    ...(exclusions?.protein?.length > 0 ? { 'macros.protein': { $nin: exclusions.protein } } : {})
-  });
+  blacklisted: { $ne: true },
+  ...(exclusions?.restaurants?.length > 0 ? {
+    restaurant: { $nin: exclusions.restaurants }
+  } : {}),
+  ...(exclusions?.protein?.length > 0 ? {
+    proteinType: { $nin: exclusions.protein }
+  } : {})
+});
 
   const lockedMealTypes = locks.map(lock => Object.keys(lock)[0]);
   let filteredRestrictions = restrictions?.filter(r => !lockedMealTypes.includes(r));
