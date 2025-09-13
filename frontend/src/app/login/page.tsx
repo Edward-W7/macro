@@ -1,6 +1,6 @@
 "use client";
 
-// HIGHLIGHT: Import js-cookie for cookie management
+// cookie shi
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -8,10 +8,9 @@ import { useState, useEffect } from 'react';
 
 
 export default function Login() {
-  // HIGHLIGHT: Add router for redirect after login
   const router = useRouter();
 
-  // Redirect to dashboard if already logged in
+  // redirect if already logged in
   const [checked, setChecked] = useState(false);
   useEffect(() => {
     if (Cookies.get('loggedIn') === 'true') {
@@ -22,15 +21,13 @@ export default function Login() {
   }, [router]);
   if (!checked) return null;
 
-  // HIGHLIGHT: Login handler to set cookie
-  // HIGHLIGHT: Login handler to POST to /api/login
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     const email = form.email.value;
     const password = form.password.value;
 
-    // HIGHLIGHT: Send POST request to /api/login
+    // ge backend shit
     const res = await fetch('/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -63,7 +60,6 @@ export default function Login() {
           </div>
         </Link>
         <h2>Login</h2>
-        {/* HIGHLIGHT: Add onSubmit handler to form */}
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', alignItems: 'flex-start', marginTop: '2rem', marginBottom: '1.5rem' }}>
           <label className="form-label-row">
             <span>Email:</span>

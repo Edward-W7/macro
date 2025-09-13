@@ -1,6 +1,6 @@
 export const metadata = {
   title: 'macro.',
-  description: 'Cool Description Here',
+  description: 'Nutrition for CMU Students',
 }
 
 import './globals.css';
