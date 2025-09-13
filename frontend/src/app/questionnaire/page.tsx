@@ -5,6 +5,14 @@ export default function Questionnaire() {
   const router = useRouter();
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const form = e.currentTarget;
+    const height = (form.elements.namedItem('height') as HTMLInputElement)?.value;
+    const weight = (form.elements.namedItem('weight') as HTMLInputElement)?.value;
+    const about = (form.elements.namedItem('about') as HTMLTextAreaElement)?.value;
+    const data = { height, weight, about };
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('questionnaire', JSON.stringify(data));
+    }
     router.push("/register");
   }
   return (

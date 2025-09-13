@@ -1,11 +1,30 @@
+"use client";
+
+// HIGHLIGHT: Import js-cookie for cookie management
+import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+
 export default function Login() {
+  // HIGHLIGHT: Add router for redirect after login
+  const router = useRouter();
+
+  // HIGHLIGHT: Login handler to set cookie
+  function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    // HIGHLIGHT: Set a login cookie (for demo, set a flag; in real app, set a token)
+    Cookies.set('loggedIn', 'true', { expires: 7 }); // 7 days expiry
+    // HIGHLIGHT: Redirect to dashboard
+    router.push('/dashboard');
+  }
+
   return (
     <main>
       <div className="card">
         <h2>Login</h2>
-  <form style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', alignItems: 'flex-start', marginTop: '2rem', marginBottom: '1.5rem' }}>
+        {/* HIGHLIGHT: Add onSubmit handler to form */}
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', alignItems: 'flex-start', marginTop: '2rem', marginBottom: '1.5rem' }}>
           <label className="form-label-row">
             <span>Email:</span>
             <input type="email" name="email" className="input" style={{ width: '16rem' }} required />
