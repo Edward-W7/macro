@@ -174,7 +174,7 @@ export default function Dashboard() {
     <>
       <ProgressPopup />
       <main>
-  <div className="card">
+  <div className="card" style={{ marginTop: '1.5rem' }}>
         <a href="/" style={{ textDecoration: 'none' }}>
           <div style={{
             display: 'inline-block',
@@ -241,14 +241,34 @@ export default function Dashboard() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', margin: '1.2rem 0 1.5rem 0' }}>
           {/* Restaurants */}
           <div style={{ position: 'relative', width: '100%' }}>
-            <button type="button" className="input" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', fontWeight: 600, background: '#23232b', color: '#f4f4f5', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', padding: '0.6rem 1rem', minHeight: '2.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }} onClick={() => setOpenDropdowns(prev => ({ ...prev, restaurants: !prev.restaurants }))}>
-              <span style={{ marginRight: '0.5rem' }}>Exclude Restaurants:</span>
+            <button
+              type="button"
+              className="input"
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontWeight: 600,
+                background: '#23232b',
+                color: '#f4f4f5',
+                border: '1.5px solid #a1a1aa',
+                borderRadius: '0.5rem',
+                padding: '0.6rem 1rem',
+                minHeight: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+              }}
+              onClick={() => setOpenDropdowns(prev => ({ ...prev, restaurants: !prev.restaurants }))}
+            >
+              <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Exclude Restaurants:</span>
               {exclusions.restaurants.length > 0 ? (
                 exclusions.restaurants.map(item => (
-                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block' }}>{item}</span>
+                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
                 ))
               ) : (
-                <span style={{ color: '#a1a1aa', fontWeight: 400 }}>None</span>
+                <span style={{ color: '#a1a1aa', fontWeight: 400, flex: '0 0 auto' }}>None</span>
               )}
             </button>
             {openDropdowns.restaurants && (
@@ -264,14 +284,34 @@ export default function Dashboard() {
           </div>
           {/* Proteins */}
           <div style={{ position: 'relative', width: '100%' }}>
-            <button type="button" className="input" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', fontWeight: 600, background: '#23232b', color: '#f4f4f5', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', padding: '0.6rem 1rem', minHeight: '2.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }} onClick={() => setOpenDropdowns(prev => ({ ...prev, proteins: !prev.proteins }))}>
-              <span style={{ marginRight: '0.5rem' }}>Exclude Proteins:</span>
+            <button
+              type="button"
+              className="input"
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontWeight: 600,
+                background: '#23232b',
+                color: '#f4f4f5',
+                border: '1.5px solid #a1a1aa',
+                borderRadius: '0.5rem',
+                padding: '0.6rem 1rem',
+                minHeight: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+              }}
+              onClick={() => setOpenDropdowns(prev => ({ ...prev, proteins: !prev.proteins }))}
+            >
+              <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Exclude Proteins:</span>
               {exclusions.proteins.length > 0 ? (
                 exclusions.proteins.map(item => (
-                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block' }}>{item}</span>
+                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
                 ))
               ) : (
-                <span style={{ color: '#a1a1aa', fontWeight: 400 }}>None</span>
+                <span style={{ color: '#a1a1aa', fontWeight: 400, flex: '0 0 auto' }}>None</span>
               )}
             </button>
             {openDropdowns.proteins && (
@@ -287,14 +327,34 @@ export default function Dashboard() {
           </div>
           {/* Allergies/Dietary */}
           <div style={{ position: 'relative', width: '100%' }}>
-            <button type="button" className="input" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', fontWeight: 600, background: '#23232b', color: '#f4f4f5', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', padding: '0.6rem 1rem', minHeight: '2.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }} onClick={() => setOpenDropdowns(prev => ({ ...prev, allergies: !prev.allergies }))}>
-              <span style={{ marginRight: '0.5rem' }}>Allergies/Dietary:</span>
+            <button
+              type="button"
+              className="input"
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontWeight: 600,
+                background: '#23232b',
+                color: '#f4f4f5',
+                border: '1.5px solid #a1a1aa',
+                borderRadius: '0.5rem',
+                padding: '0.6rem 1rem',
+                minHeight: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+              }}
+              onClick={() => setOpenDropdowns(prev => ({ ...prev, allergies: !prev.allergies }))}
+            >
+              <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Allergies/Dietary:</span>
               {exclusions.allergies.length > 0 ? (
                 exclusions.allergies.map(item => (
-                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block' }}>{item}</span>
+                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
                 ))
               ) : (
-                <span style={{ color: '#a1a1aa', fontWeight: 400 }}>None</span>
+                <span style={{ color: '#a1a1aa', fontWeight: 400, flex: '0 0 auto' }}>None</span>
               )}
             </button>
             {openDropdowns.allergies && (
@@ -326,60 +386,25 @@ export default function Dashboard() {
                 minHeight: '2.5rem',
                 display: 'flex',
                 alignItems: 'center',
-                flexWrap: 'wrap',
                 gap: '0.4rem',
+                flexWrap: 'wrap',
               }}
               onClick={() => setOpenDropdowns(prev => ({ ...prev, mealtimes: !prev.mealtimes }))}
             >
-              <span style={{ marginRight: '0.5rem' }}>Select Meal Times:</span>
+              <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Select Meal Times:</span>
               {chosenMealTimes.length > 0 ? (
                 chosenMealTimes.map(item => (
-                  <span key={item} style={{
-                    background: '#37373f',
-                    color: '#f4f4f5',
-                    borderRadius: '0.7em',
-                    padding: '0.18em 0.7em',
-                    fontWeight: 500,
-                    border: '1.5px solid #6366f1',
-                    boxShadow: '0 1px 4px rgba(99,102,241,0.08)',
-                    display: 'inline-block',
-                  }}>{item}</span>
+                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
                 ))
               ) : (
-                <span style={{ color: '#a1a1aa', fontWeight: 400 }}>None</span>
+                <span style={{ color: '#a1a1aa', fontWeight: 400, flex: '0 0 auto' }}>None</span>
               )}
             </button>
             {openDropdowns.mealtimes && (
-              <div style={{
-                position: 'static',
-                zIndex: 10,
-                background: '#23232b',
-                border: '1.5px solid #a1a1aa',
-                borderRadius: '0.5rem',
-                width: '100%',
-                marginTop: '0.2rem',
-                maxHeight: '210px',
-                overflowY: 'auto',
-                boxShadow: '0 2px 12px rgba(99,102,241,0.13)',
-              }}>
+              <div style={{ position: 'static', zIndex: 10, background: '#23232b', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: '0 2px 12px rgba(99,102,241,0.13)' }}>
                 {mealTimeOptions.map(option => (
-                  <label
-                    key={option}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '0.5rem 1rem',
-                      cursor: 'pointer',
-                      fontSize: '1rem',
-                      color: '#f4f4f5',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={chosenMealTimes.includes(option)}
-                      onChange={() => handleMealTimeChange(option)}
-                      style={{ marginRight: '0.7em' }}
-                    />
+                  <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: '#f4f4f5' }}>
+                    <input type="checkbox" checked={chosenMealTimes.includes(option)} onChange={() => handleMealTimeChange(option)} style={{ marginRight: '0.7em' }} />
                     {option}
                   </label>
                 ))}

@@ -22,7 +22,7 @@ export default function Home() {
               <img src="/assets/macro2.png" alt="Macro Logo" style={{ width: '110px', display: 'block' }} />
             </div>
           </Link>
-        <h2 style={{ fontSize: '1.45rem', fontWeight: 600, marginBottom: '2.2rem' }}>Some Cheeky Message</h2>
+        <h2 style={{ fontSize: '1.45rem', fontWeight: 600, marginBottom: '2.2rem' }}>Campus Food can still meet your nutritional goals!</h2>
         <div className="button-group">
           <Link href="/questionnaire" className="button">Get Started</Link>
           <Link href="/login" className="button">Login</Link>
