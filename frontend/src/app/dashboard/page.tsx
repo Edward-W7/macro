@@ -135,77 +135,24 @@ export default function Dashboard() {
   const [authed, setAuthed] = useState(false);
 
   function getLockedMealsArray() {
-    return Object.entries(lockedMeals)
-      .filter(([_, isLocked]) => isLocked)
-      .map(([mealTime]) => {
-        return mealData.find(entry => {
-          const mt = (entry.meal.meal_time || chosenMealTimes[mealData.indexOf(entry)] || '');
-          return mt === mealTime;
-        })?.meal;
-      })
-      .filter(Boolean);
-  }
+  const result = [];
 
-  // --- NEW: Main function to handle fetching macros and then meals ---
-  async function generatePlan() {
-    setIsLoading(true);
-    setMealData([]); // Clear previous meals on reroll
-
-    try {
-      // Step 1: Call the generate-macros API with the user's profile
-      const macroResponse = await fetch('/api/generate-macros', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userProfile),
+  Object.entries(lockedMeals)
+    .filter(([_, isLocked]) => isLocked)
+    .forEach(([mealTime]) => {
+      const mealEntry = mealData.find(entry => {
+        const mt = entry.meal.meal_time || chosenMealTimes[mealData.indexOf(entry)] || '';
+        return mt === mealTime;
       });
 
-      if (!macroResponse.ok) {
-        const errorData = await macroResponse.json();
-        throw new Error(errorData.error.message || 'Failed to fetch macros.');
+      if (mealEntry?.meal) {
+        result.push({ [mealTime]: mealEntry.meal });
       }
+    });
 
-      const calculatedMacros: TargetMacros = await macroResponse.json();
-      setTargetMacros(calculatedMacros); // Save the AI response to state
+  return result;
+}
 
-      // Step 2: Use the AI-calculated macros to call the meal generation API
-      const lockedMealsData = getLockedMealsArray();
-      const targetsBody = {
-        money: 0, // This can be updated later
-        macros: {
-          protein: calculatedMacros.protein_grams,
-          carbohydrates: calculatedMacros.carbs_grams,
-          fat: calculatedMacros.fat_grams,
-        },
-        calories: calculatedMacros.calories,
-        restrictions: chosenMealTimes,
-        exclusions: {
-          restaurants: exclusions.restaurants,
-          protein: exclusions.proteins,
-          dietary: exclusions.allergies,
-        },
-        lockedMealsData,
-      };
-
-      const targetsResponse = await fetch('/api/targets', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(targetsBody),
-      });
-
-      if (!targetsResponse.ok) {
-        throw new Error(`Meal generation failed: ${targetsResponse.statusText}`);
-      }
-
-      const mealPlanData = await targetsResponse.json();
-      setMealData(mealPlanData.bestResult);
-
-    } catch (error) {
-      console.error("An error occurred during the plan generation:", error);
-      // Optionally, set an error state here to show a message to the user
-    } finally {
-      setIsLoading(false);
-    }
-  }
 
 
   useEffect(() => {
@@ -466,8 +413,8 @@ export default function Dashboard() {
             }}
             onClick={async (e) => {
               e.currentTarget.blur();
-              const lockedMealsData = getLockedMealsArray();
-              console.log('Locked meals to be sent:', lockedMealsData);
+              const locks = getLockedMealsArray();
+              console.log('Locked meals to be sent:', locks);
               const body = {
                 money: 0,
                 macros: {
@@ -482,8 +429,9 @@ export default function Dashboard() {
                   protein: exclusions.proteins,
                   dietary: exclusions.allergies,
                 },
-                lockedMealsData,
+                locks,
               };
+              console.log("Databody", body)
               const res = await fetch('/api/targets', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

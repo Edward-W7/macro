@@ -2,6 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Food from '@/models/food';
 
+type Macros = {
+  protein?: number;
+  carbohydrates?: number;
+  fat?: number;
+};
+
+type Meal = {
+  macros?: Macros;
+  calories?: number;
+  money?: number;
+};
+
+type LockedMeal = {
+  [mealTime: string]: Meal;
+};
 
 // Helper to compute totals for selectedMeals
 function getMealTotals(selectedMeals: any[]) {
@@ -34,7 +49,7 @@ function scoreMealTotals(totals: any, goals: any) {
 export async function POST(req: NextRequest) {
     await connectDB();
     const { money, macros, calories, restrictions, exclusions, locks = [] } = await req.json();
-
+    console.log("PASSED", locks);
     // Set goals based on initial constraints
     const goals = {
         money,
@@ -56,14 +71,16 @@ export async function POST(req: NextRequest) {
   let bestScore = -10000;
   const lockedMeals = Array.isArray(locks) ? locks : [];
 
-  for (const locked of lockedMeals) {
-    const meal = locked.meal || {};
-    goals.protein -= meal.macros.protein || 0;
-    goals.carbohydrates -= meal.macros.carbohydrates || 0;
-    goals.fat -= meal.macros.fat || 0;
-    goals.calories -= meal.calories || 0;
-    goals.money -= meal.money || 0;
-  }
+for (const locked of lockedMeals as LockedMeal[]) {
+  // locked is e.g. { Breakfast: {...} }
+  const [mealTime, meal] = Object.entries(locked)[0];  // Get first (and only) key/value
+
+  goals.protein        -= meal.macros?.protein        || 0;
+  goals.carbohydrates  -= meal.macros?.carbohydrates  || 0;
+  goals.fat            -= meal.macros?.fat            || 0;
+  goals.calories       -= meal.calories               || 0;
+  goals.money          -= meal.money                  || 0;
+}
 
   // Exclude foods from specified restaurants, with specified proteins, and with specified dietary tags, in addition to blacklisted
   let prunedFoods = await Food.find({
@@ -74,6 +91,8 @@ export async function POST(req: NextRequest) {
 
   const lockedMealTypes = Object.keys(locks); // ['Breakfast', 'Dinner']
   let filteredRestrictions = restrictions?.filter(r => !lockedMealTypes.includes(r));
+
+  console.log("LCOKED", lockedMeals)
   for (let i: number = 0; i < 5; i++) {
     // 5 stages of relaxing constraints
     let fail = true;
