@@ -1,15 +1,38 @@
 "use client";
-import Cookies from 'js-cookie'; // HIGHLIGHT: Import js-cookie
+import Cookies from 'js-cookie';
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// HIGHLIGHT: Auth check using cookie only
+// Auth check using cookie only
 function isAuthenticated() {
   if (typeof window === "undefined") return false;
   return Cookies.get('loggedIn') === 'true';
 }
 
+// Define a type for the AI-generated macros for type-safety
+interface TargetMacros {
+  calories: number;
+  protein_grams: number;
+  carbs_grams: number;
+  fat_grams: number;
+  reasoning: string;
+}
+
 export default function Dashboard() {
+  // State for user's profile info. In a real app, this would be fetched or come from a form.
+  const [userProfile, setUserProfile] = useState({
+    height: 180,
+    weight: 75,
+    gender: 'male',
+    age: 25,
+    goal: 'build lean muscle',
+    description: 'I want a high-protein diet but I am vegetarian.'
+  });
+
+  // State for the AI-calculated target macros
+  const [targetMacros, setTargetMacros] = useState<TargetMacros | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   // State to track locked meals by meal time
   const [lockedMeals, setLockedMeals] = useState<{ [mealTime: string]: boolean }>({});
 
@@ -36,7 +59,6 @@ export default function Dashboard() {
   );
   // State to show/hide all filters
   const [filtersExpanded, setFiltersExpanded] = useState(true);
-  // ...existing code...
   // Options for dropdowns (loaded from JSON)
   const [restaurantOptions, setRestaurantOptions] = useState<string[]>([]);
   const [proteinOptions, setProteinOptions] = useState<string[]>([]);
@@ -44,7 +66,6 @@ export default function Dashboard() {
   const mealTimeOptions = ['Breakfast', 'Lunch', 'Dinner']; // You can expand this as needed
   const [chosenMealTimes, setChosenMealTimes] = useState<string[]>(mealTimeOptions); // all selected by default
   // State for dropdowns
-  // Encapsulate all exclusions in a single object
   const [exclusions, setExclusions] = useState<{
     restaurants: string[];
     proteins: string[];
@@ -55,7 +76,6 @@ export default function Dashboard() {
     allergies: [],
   });
   const [mealData, setMealData] = useState<any[]>([]);
-  // Remove old openDropdown, use openDropdowns instead
   const [openDropdowns, setOpenDropdowns] = useState<{ [key: string]: boolean }>({
     restaurants: false,
     proteins: false,
@@ -80,8 +100,6 @@ export default function Dashboard() {
     }
     fetchOptions();
   }, []);
-
-  // State for dropdowns
 
   function handleDropdownChange(
     option: string,
@@ -115,15 +133,11 @@ export default function Dashboard() {
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [authed, setAuthed] = useState(false);
-  const [expanded, setExpanded] = useState(false);
 
-  // Helper to get locked meal objects
   function getLockedMealsArray() {
-    // Map mealTime to locked, then find the meal object for each locked mealTime
     return Object.entries(lockedMeals)
       .filter(([_, isLocked]) => isLocked)
       .map(([mealTime]) => {
-        // Find the meal for this mealTime
         return mealData.find(entry => {
           const mt = (entry.meal.meal_time || chosenMealTimes[mealData.indexOf(entry)] || '');
           return mt === mealTime;
@@ -131,6 +145,68 @@ export default function Dashboard() {
       })
       .filter(Boolean);
   }
+
+  // --- NEW: Main function to handle fetching macros and then meals ---
+  async function generatePlan() {
+    setIsLoading(true);
+    setMealData([]); // Clear previous meals on reroll
+
+    try {
+      // Step 1: Call the generate-macros API with the user's profile
+      const macroResponse = await fetch('/api/generate-macros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userProfile),
+      });
+
+      if (!macroResponse.ok) {
+        const errorData = await macroResponse.json();
+        throw new Error(errorData.error.message || 'Failed to fetch macros.');
+      }
+
+      const calculatedMacros: TargetMacros = await macroResponse.json();
+      setTargetMacros(calculatedMacros); // Save the AI response to state
+
+      // Step 2: Use the AI-calculated macros to call the meal generation API
+      const lockedMealsData = getLockedMealsArray();
+      const targetsBody = {
+        money: 0, // This can be updated later
+        macros: {
+          protein: calculatedMacros.protein_grams,
+          carbohydrates: calculatedMacros.carbs_grams,
+          fat: calculatedMacros.fat_grams,
+        },
+        calories: calculatedMacros.calories,
+        restrictions: chosenMealTimes,
+        exclusions: {
+          restaurants: exclusions.restaurants,
+          protein: exclusions.proteins,
+          dietary: exclusions.allergies,
+        },
+        lockedMealsData,
+      };
+
+      const targetsResponse = await fetch('/api/targets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(targetsBody),
+      });
+
+      if (!targetsResponse.ok) {
+        throw new Error(`Meal generation failed: ${targetsResponse.statusText}`);
+      }
+
+      const mealPlanData = await targetsResponse.json();
+      setMealData(mealPlanData.bestResult);
+
+    } catch (error) {
+      console.error("An error occurred during the plan generation:", error);
+      // Optionally, set an error state here to show a message to the user
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
 
   useEffect(() => {
     const authed = isAuthenticated();
@@ -147,7 +223,6 @@ export default function Dashboard() {
   if (!authed) {
     return null;
   }
-  // HIGHLIGHT: Main dashboard UI with meal info, macro summary, etc.
   return (
     <main>
       <div className="card">
@@ -166,6 +241,29 @@ export default function Dashboard() {
         </a>
         <h2>Welcome to your dashboard!</h2>
         <p>You are now logged in. Here you can view your meal suggestions:</p>
+
+        {/* --- NEW: Display AI-Generated Targets --- */}
+        {targetMacros && (
+          <div style={{
+            background: '#23232b',
+            border: '1.5px solid #6366f1',
+            borderRadius: '0.5rem',
+            padding: '1rem',
+            margin: '1.5rem 0',
+            boxShadow: '0 1px 4px rgba(99,102,241,0.08)'
+          }}>
+            <h3 style={{ marginTop: 0, color: '#a5b4fc' }}>Your AI-Generated Daily Goals</h3>
+            <p style={{ margin: '0.5rem 0 1rem 0', fontStyle: 'italic', color: '#d4d4d8' }}>
+              &quot;{targetMacros.reasoning}&quot;
+            </p>
+            <div style={{ display: 'flex', justifyContent: 'space-around', fontWeight: 600 }}>
+              <span>Calories: {targetMacros.calories}</span>
+              <span>Protein: {targetMacros.protein_grams}g</span>
+              <span>Carbs: {targetMacros.carbs_grams}g</span>
+              <span>Fat: {targetMacros.fat_grams}g</span>
+            </div>
+          </div>
+        )}
 
         {/* Show/Hide Filters button */}
         <button
@@ -342,57 +440,28 @@ export default function Dashboard() {
           </div>
         )}
 
-
-
-        {/* quick text that says whether you're meeting your goals */}
-        {true ? (
+        {/* This can be enhanced later to compare target vs actual macros */}
+        {mealData.length > 0 ? (
           <div style={{ margin: '1rem 0', color: '#22c55e', fontWeight: 600 }}>
-            ✅ You are meeting your macro goals!
+            ✅ Here is your generated meal plan!
           </div>
         ) : (
-          <div style={{ margin: '1rem 0', color: '#fdf911ff', fontWeight: 600 }}>
-            ⚠️ You cannot currently meet your macro goals. Consider broadening your search.
+          !isLoading && <div style={{ margin: '1rem 0', color: '#fdf911ff', fontWeight: 600 }}>
+             Click &quot;Generate Plan&quot; to start.
           </div>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginTop: '1.5rem' }}>
           <button
-            className="button button-small"
-            style={{ minWidth: '5.2rem', fontSize: '0.75rem', padding: '0.18rem 0.5rem' }}
+            className="button"
+            style={{ minWidth: '8rem' }}
+            disabled={isLoading}
             onClick={async (e) => {
               e.currentTarget.blur();
-              const lockedMealsData = getLockedMealsArray();
-              console.log('Locked meals to be sent:', lockedMealsData);
-              const body = {
-                money: 0,
-                macros: {
-                  protein: 100,
-                  carbohydrates: 120,
-                  fat: 45,
-                },
-                calories: 1200,
-                restrictions: chosenMealTimes,
-                exclusions: {
-                  restaurants: exclusions.restaurants,
-                  protein: exclusions.proteins,
-                  dietary: exclusions.allergies,
-                },
-                lockedMealsData,
-              };
-              const res = await fetch('/api/targets', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body),
-              });
-              if (!res.ok) {
-                console.error('API error:', res.statusText);
-                return;
-              }
-              const data = await res.json();
-              setMealData(data.bestResult);
+              generatePlan();
             }}
           >
-            🔄 Reroll
+            {isLoading ? 'Generating...' : (mealData.length > 0 ? '🔄 Reroll' : 'Generate Plan')}
           </button>
         </div>
         {mealData.length > 0 && (
@@ -414,15 +483,12 @@ export default function Dashboard() {
                 </thead>
                 <tbody>
                   {(() => {
-                    // Map meal times to their order
-                    const mealOrder = { Breakfast: 0, Lunch: 1, Dinner: 2 };
-                    // Build a list of meals with their meal time
+                    const mealOrder: { [key: string]: number } = { Breakfast: 0, Lunch: 1, Dinner: 2 };
                     const mealsWithTime = mealData.map((entry, index) => {
                       let mealTime = chosenMealTimes[index] || entry.meal.meal_time || '';
                       return { ...entry, mealTime, index };
                     });
-                    // Deduplicate: only one meal per meal time (Breakfast, Lunch, Dinner)
-                    const uniqueMeals = [];
+                    const uniqueMeals: any[] = [];
                     const seen = new Set();
                     for (const meal of mealsWithTime) {
                       if (mealOrder[meal.mealTime] !== undefined && !seen.has(meal.mealTime)) {
@@ -430,7 +496,6 @@ export default function Dashboard() {
                         seen.add(meal.mealTime);
                       }
                     }
-                    // Fill in missing slots with undefined if needed
                     const orderedMeals = [uniqueMeals[0], uniqueMeals[1], uniqueMeals[2]].filter(Boolean);
                     return orderedMeals.map((entry, sortedIdx) => {
                       const meal = entry.meal;
@@ -458,7 +523,6 @@ export default function Dashboard() {
                       );
                     });
                   })()}
-                  {/* Daily summary row */}
                   {mealData.length > 0 && (() => {
                     const total = mealData.reduce((acc, entry) => {
                       const m = entry.meal;
@@ -486,8 +550,6 @@ export default function Dashboard() {
             </div>
           </div>
         )}
-
-
 
         {/* Logout button at the very bottom */}
         <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '2.5rem' }}>
