@@ -69,44 +69,33 @@ header {
 .button {
   display: inline-block;
   padding: 0.75rem 2rem;
-  background: #3b82f6;
-  color: #fff;
-  border: none;
+  min-width: 8.5rem;
+  background: #23232b;
+  color: #3b82f6;
+  border: 2px solid #3b82f6;
   border-radius: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
   text-decoration: none;
-  transition: background 0.2s;
+  transition: background 0.2s, color 0.2s;
+  cursor: pointer;
 }
-
-main {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.button:hover, .button:focus {
+  background: #3b82f6;
+  color: #fff;
 }
 
 .card {
-  background: #27272a;
-  border-radius: 1rem;
-  padding: 2rem 3rem;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.2);
+  background: #23232b;
+  border-radius: 1.25rem;
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  box-shadow: 0 4px 32px rgba(0,0,0,0.25);
+  text-align: center;
+  margin-top: 6rem;
+  max-width: 420px;
+  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
   text-align: center;
 }
 
-.button {
-  display: inline-block;
-  margin-top: 1.5rem;
-  padding: 0.75rem 2rem;
-  background: #3b82f6;
-  color: #fff;
-  border: none;
-  border-radius: 0.5rem;
-  font-size: 1rem;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 0.2s;
-}
-.button:hover {
-  background: #2563eb;
-}

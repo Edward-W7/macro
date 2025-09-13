@@ -10,7 +10,7 @@ export default function Home() {
               <h2>Some Cheeky Message</h2>
               <div className="button-group">
                 <Link href="/questionnaire" className="button">Get Started</Link>
-                <a href="#" className="button">Login</a>
+                <Link href="/login" className="button">Login</Link>
               </div>
             </div>
       </main>
