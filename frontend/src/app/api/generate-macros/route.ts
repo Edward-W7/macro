@@ -2,23 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { OpenAI } from 'openai';
 
 // Initialize the OpenAI client with the API key from environment variables
-// This is done once when the server starts, and reused for all requests
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Define a type for the incoming request data for better type-safety
+// Define a type for the new, simplified incoming request data
 interface UserProfile {
   height: number;
   weight: number;
-  gender: string;
-  age: number;
-  goal: string;
-  description: string;
+  goals: string; // Combined field for goal and description
 }
 
 export async function POST(req: NextRequest) {
-  // Check if the OpenAI API key is configured on the server
   if (!process.env.OPENAI_API_KEY) {
     return NextResponse.json(
       { error: { message: "OpenAI API key not configured." } },
@@ -27,49 +22,44 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    // Parse the request body
     const body: UserProfile = await req.json();
-    const { height, weight, gender, age, goal, description } = body;
+    const { height, weight, goals } = body;
 
-    // Basic validation to ensure all required fields are present
-    if (!height || !weight  || !age || !goal || !description) {
+    // Updated validation for the new, simpler fields
+    if (!height || !weight || !goals) {
       return NextResponse.json(
-        { error: { message: "Missing required fields. Please provide height, weight, gender, age, goal, and description." } },
+        { error: { message: "Missing required fields. Please provide height, weight, and goals." } },
         { status: 400 }
       );
     }
 
-    // System prompt to set the persona and desired output format for the AI
+    // Updated system prompt to handle missing data and match frontend types
     const system_prompt = `
-      You are an expert nutritionist and personal trainer. Your task is to calculate the daily
-      macronutrient and caloric needs for a user based on their personal data and goals.
-      Analyze the provided information and respond ONLY with a valid JSON object containing
-      the recommended calories, protein, carbohydrates, and fat, along with a brief
-      justification (1 sentence) for your recommendations. Do not include any text outside of the JSON object.
-      The JSON object should have the following structure:
+      You are an expert nutritionist. Your task is to calculate daily macronutrient needs
+      based on the user's height, weight, and goals. Since you are not given age or gender,
+      make a reasonable assumption (e.g., a moderately active young adult) unless the user's
+      goals specify otherwise.
+      Respond ONLY with a valid JSON object. Do not include any text outside of the JSON object.
+      The JSON object must have the following structure, using these exact keys:
       {
         "calories": <integer>,
-        "protein": <integer>,
-        "carbs": <integer>,
-        "fat": <integer>,
-        "reasoning": "<string>"
+        "protein_grams": <integer>,
+        "carbs_grams": <integer>,
+        "fat_grams": <integer>,
+        "reasoning": "<a 1-sentence justification for your recommendations>"
       }
     `;
 
-    // User data prompt constructed from the request body
+    // Updated user data prompt using the simplified 'goals' string
     const user_data_prompt = `
       Please calculate the nutritional targets for the following user:
       - Height: ${height} cm
       - Weight: ${weight} kg
-      - Gender: ${gender}
-      - Age: ${age} years
-      - Primary Goal: ${goal}
-      - Additional Notes & Dietary Wants: "${description}"
+      - Goals and Dietary Notes: "${goals}"
     `;
 
-    // Make the API call to OpenAI
     const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini-2025-08-07",
+      model: "gpt-4o-mini", // Using a more recent and efficient model
       messages: [
         { "role": "system", "content": system_prompt },
         { "role": "user", "content": user_data_prompt }
@@ -80,11 +70,9 @@ export async function POST(req: NextRequest) {
     const content = completion.choices[0].message.content;
     const macros = JSON.parse(content as string);
 
-    // Send the successful response back to the client
     return NextResponse.json(macros);
 
   } catch (error) {
-    // Handle potential errors from the API call or JSON parsing
     console.error("Error in generate-macros route:", error);
     return NextResponse.json(
       { error: { message: 'An internal server error occurred.' } },
@@ -92,3 +80,4 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
