@@ -304,51 +304,6 @@ export default function Dashboard() {
         )}
 
 
-        {/* List of meals presented nicely with a lock button next to it*/}
-
-        {/* click to expand for full macro information on all meals*/}
-        <div style={{ margin: '1.2rem 0' }}>
-          <button
-            className="button button-small"
-            style={{ marginBottom: expanded ? '0.5rem' : 0, minWidth: '7.5rem', fontSize: '0.75rem', padding: '0.18rem 0.5rem', transition: 'background 0.2s, color 0.2s, border 0.2s' }}
-            onClick={e => {
-              setExpanded(val => !val);
-              e.currentTarget.blur();
-            }}
-            aria-expanded={expanded}
-          >
-            {expanded ? 'Hide Full Info' : 'Show Full Info'}
-          </button>
-          <div
-            style={{
-              maxHeight: expanded ? '200px' : '0',
-              overflow: 'hidden',
-              transition: 'max-height 0.35s cubic-bezier(0.4,0,0.2,1)',
-              marginTop: expanded ? '0.5rem' : '0',
-            }}
-            aria-hidden={!expanded}
-          >
-            <div style={{
-              background: '#23232b',
-              border: '1px solid #444',
-              borderRadius: '0.5rem',
-              padding: expanded ? '0.5rem' : '0 0.5rem',
-              textAlign: 'left',
-              color: '#f4f4f5',
-              fontSize: '0.78rem',
-              opacity: expanded ? 1 : 0,
-              transition: 'opacity 0.2s 0.1s',
-            }}>
-              {/* Replace with real macro info */}
-              <strong style={{ fontSize: '0.81rem' }}>Full Macro Information:</strong>
-              <ul style={{ margin: '0.3rem 0 0 0.05rem', paddingLeft: '1.1em' }}>
-                <li>Meal 1: 30g protein, 50g carbs, 10g fat</li>
-                <li>Meal 2: 25g protein, 40g carbs, 12g fat</li>
-                <li>Meal 3: 28g protein, 45g carbs, 8g fat</li>
-              </ul>
-            </div>
-          </div>
-        </div>
 
         {/* quick text that says whether you're meeting your goals */}
         {true ? (
