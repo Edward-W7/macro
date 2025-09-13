@@ -33,7 +33,7 @@ function scoreMealTotals(totals: any, goals: any) {
 
 export async function POST(req: NextRequest) {
     await connectDB();
-    const { money, macros, calories, restrictions, exclusions } = await req.json();
+    const { money, macros, calories, restrictions, exclusions, locks = [] } = await req.json();
 
     // Set goals based on initial constraints
     const goals = {
@@ -54,24 +54,38 @@ export async function POST(req: NextRequest) {
   let bestResult: any[] = [];
   let cycles = 1;
   let bestScore = -10000;
+  const lockedMeals = Array.isArray(locks) ? locks : [];
+
+  for (const locked of lockedMeals) {
+    const meal = locked.meal || {};
+    goals.protein -= meal.macros.protein || 0;
+    goals.carbohydrates -= meal.macros.carbohydrates || 0;
+    goals.fat -= meal.macros.fat || 0;
+    goals.calories -= meal.calories || 0;
+    goals.money -= meal.money || 0;
+  }
+
   // Exclude foods from specified restaurants, with specified proteins, and with specified dietary tags, in addition to blacklisted
   let prunedFoods = await Food.find({
     blacklisted: { $ne: true },
     ...(exclusions?.restaurants?.length > 0 ? { restaurant: { $nin: exclusions.restaurants } } : {}),
     ...(exclusions?.protein?.length > 0 ? { 'macros.protein': { $nin: exclusions.protein } } : {})
   });
+
+  const lockedMealTypes = Object.keys(locks); // ['Breakfast', 'Dinner']
+  let filteredRestrictions = restrictions?.filter(r => !lockedMealTypes.includes(r));
   for (let i: number = 0; i < 5; i++) {
     // 5 stages of relaxing constraints
     let fail = true;
     for (let j: number = 0; j < cycles; j++) {
-        let remainingFlex = money + relaxFlex;
-        let remainingProtein = macros.protein + relaxProtein;
-        let remainingCalories = calories + relaxCalories;
-        let remainingCarbs = macros.carbohydrates + relaxCarbohydrates;
-        let remainingFat = macros.fat + relaxFats;
-        selectedMeals = [];
+        let remainingFlex = goals.money + relaxFlex;
+        let remainingProtein = goals.protein + relaxProtein;
+        let remainingCalories = goals.calories + relaxCalories;
+        let remainingCarbs = goals.carbohydrates + relaxCarbohydrates;
+        let remainingFat = goals.fat + relaxFats;
+        let burnerMeals = lockedMeals
         let finished = true;
-        for (const meal of restrictions) {
+        for (const meal of filteredRestrictions) {
             // Query for foods that fit this meal, flex, protein, and calorie constraints, and are not blacklisted
             const foods = prunedFoods
                 .filter(food => Object.values(food.meal_type).includes(meal))
@@ -91,12 +105,14 @@ export async function POST(req: NextRequest) {
             if (foods.length > 0) {
                 let food;
                 // If this is the last meal in restrictions, pick the food with the highest protein
-                if (meal === restrictions[restrictions.length - 1]) {
-                    food = foods.sort((a, b) => b.macros.protein - a.macros.protein)[0];
+                if (meal === filteredRestrictions[filteredRestrictions.length]) {
+                    const endIndex = Math.floor(length * 0.25); // 25% mark
+                    const randomIndex = Math.floor(Math.random() * endIndex);
+                    food = foods.sort((a, b) => b.macros.protein - a.macros.protein)[randomIndex];
                 } else {
                     food = foods[Math.floor(Math.random() * foods.length)];
                 }
-                selectedMeals.push({ meal: food });
+                burnerMeals.push({ [meal]: food });
                 // Update remaining constraints
                 remainingFlex -= food.money;
                 remainingProtein -= food.macros.protein;
@@ -112,6 +128,21 @@ export async function POST(req: NextRequest) {
         if (!finished) {
             continue;
         }
+        const mealOrder = ['Breakfast', 'Lunch', 'Dinner'];
+
+        burnerMeals.sort((a, b) => {
+            const mealTypeA = Object.keys(a)[0].toLowerCase();
+            const mealTypeB = Object.keys(b)[0].toLowerCase();
+
+            return mealOrder.indexOf(mealTypeA) - mealOrder.indexOf(mealTypeB);
+        });
+
+        let selectedMeals = burnerMeals.map(obj => {
+            const mealKey = Object.keys(obj)[0];
+            const food = obj[mealKey];
+            return { meal: food };
+        });
+
         fail = false;
         let val = scoreMealTotals(getMealTotals(selectedMeals), goals);
         // console.log("PRev best wcore", bestScore)
