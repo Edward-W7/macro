@@ -36,6 +36,19 @@ export default function Register() {
   return (
     <main>
       <div className="card">
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <div style={{
+            display: 'inline-block',
+            border: '2px solid #3b82f6',
+            borderRadius: '1rem',
+            padding: '0.75rem 1.5rem',
+            marginBottom: '0.7rem',
+            background: '#18181b',
+            cursor: 'pointer',
+          }}>
+            <img src="/assets/macro2.png" alt="Macro Logo" style={{ width: '110px', display: 'block' }} />
+          </div>
+        </Link>
         <h2>Register to save your information!</h2>
         {/* HIGHLIGHT: Add onSubmit handler */}
         <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', alignItems: 'flex-start', marginTop: '2rem', marginBottom: '1.5rem' }}>
