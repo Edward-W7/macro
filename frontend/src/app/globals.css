@@ -1,3 +1,17 @@
+.button.button-small {
+  min-width: 0;
+  padding: 0.4rem 1.1rem;
+  font-size: 0.95rem;
+  border: 2px solid #6b7280 !important;
+  color: #d1d5db !important;
+  background: #23232b;
+  transition: background 0.2s, color 0.2s, border 0.2s;
+}
+.button.button-small:hover, .button.button-small:focus, .button.button-small:active {
+  background: #32323a;
+  color: #fff !important;
+  border-color: #fff !important;
+}
 .input {
   border-radius: 0.5rem;
   border: 1px solid #444;
