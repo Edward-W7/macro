@@ -15,7 +15,8 @@ export default function Dashboard() {
   const [restaurantOptions, setRestaurantOptions] = useState<string[]>([]);
   const [proteinOptions, setProteinOptions] = useState<string[]>([]);
   const [allergyOptions, setAllergyOptions] = useState<string[]>([]);
-
+  const mealTimeOptions = ['Breakfast', 'Lunch', 'Dinner']; // You can expand this as needed
+  const [chosenMealTimes, setChosenMealTimes] = useState<string[]>(mealTimeOptions); // all selected by default
   // State for dropdowns
   // Encapsulate all exclusions in a single object
   const [exclusions, setExclusions] = useState<{
@@ -27,6 +28,7 @@ export default function Dashboard() {
     proteins: [],
     allergies: [],
   });
+  const [mealData, setMealData] = useState<any[]>([]);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   useEffect(() => {
@@ -62,6 +64,16 @@ export default function Dashboard() {
       }
     });
   }
+
+  function handleMealTimeChange(option: string) {
+  setChosenMealTimes(prev => {
+    if (prev.includes(option)) {
+      return prev.filter(o => o !== option);
+    } else {
+      return [...prev, option];
+    }
+  });
+}
   const router = useRouter();
   const [authChecked, setAuthChecked] = useState(false);
   const [authed, setAuthed] = useState(false);
@@ -175,6 +187,86 @@ export default function Dashboard() {
             )}
           </div>
         </div>
+        {/* Meal Times */}
+        <div style={{ position: 'relative', width: '100%' }}>
+          <button
+            type="button"
+            className="input"
+            style={{
+              width: '100%',
+              textAlign: 'left',
+              cursor: 'pointer',
+              fontWeight: 600,
+              background: '#23232b',
+              color: '#f4f4f5',
+              border: '1.5px solid #a1a1aa',
+              borderRadius: '0.5rem',
+              padding: '0.6rem 1rem',
+              minHeight: '2.5rem',
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '0.4rem'
+            }}
+            onClick={() => setOpenDropdown(openDropdown === 'mealtimes' ? null : 'mealtimes')}
+          >
+            <span style={{ marginRight: '0.5rem' }}>Select Meal Times:</span>
+            {chosenMealTimes.length > 0 ? (
+              chosenMealTimes.map(item => (
+                <span key={item} style={{
+                  background: '#37373f',
+                  color: '#f4f4f5',
+                  borderRadius: '0.7em',
+                  padding: '0.18em 0.7em',
+                  fontWeight: 500,
+                  border: '1.5px solid #6366f1',
+                  boxShadow: '0 1px 4px rgba(99,102,241,0.08)',
+                  display: 'inline-block'
+                }}>{item}</span>
+              ))
+            ) : (
+              <span style={{ color: '#a1a1aa', fontWeight: 400 }}>None</span>
+            )}
+          </button>
+
+          {openDropdown === 'mealtimes' && (
+            <div style={{
+              position: 'absolute',
+              zIndex: 10,
+              background: '#23232b',
+              border: '1.5px solid #a1a1aa',
+              borderRadius: '0.5rem',
+              width: '100%',
+              marginTop: '0.2rem',
+              maxHeight: '210px',
+              overflowY: 'auto',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.13)'
+            }}>
+              {mealTimeOptions.map(option => (
+                <label
+                  key={option}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '0.5rem 1rem',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    color: '#f4f4f5'
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={chosenMealTimes.includes(option)}
+                    onChange={() => handleMealTimeChange(option)}
+                    style={{ marginRight: '0.7em' }}
+                  />
+                  {option}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
+
 
         {/* List of meals presented nicely with a lock button next to it*/}
 
@@ -237,15 +329,79 @@ export default function Dashboard() {
           <button
             className="button button-small"
             style={{ minWidth: '5.2rem', fontSize: '0.75rem', padding: '0.18rem 0.5rem' }}
-            onClick={e => {
+            onClick={async (e) => {
                 // some logic here for requerying
-                alert('Rerolling meals! (implement logic here)');
                 e.currentTarget.blur();
+                const body = {
+                  money: 0,
+                  macros: {
+                    protein: 100,
+                    carbohydrates: 120,
+                    fat: 45,
+                  },
+                  calories: 1200,
+                  restrictions: chosenMealTimes,
+                  exclusions: {
+                    restaurants: exclusions.restaurants,
+                    protein: exclusions.proteins,
+                    dietary: exclusions.allergies,
+                  }
+                };
+                const res = await fetch('/api/targets', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(body),
+                });
+                if (!res.ok) {
+                  console.error('API error:', res.statusText);
+                  return;
+                }
+                const data = await res.json();
+                setMealData(data.bestResult);
+                // console.log("DATA", data);
+                // console.log("CHOSEN DATA",mealData);
+                // console.log("LENGTH", mealData.length);
             }}
           >
             🔄 Reroll
           </button>
         </div>
+        {mealData.length > 0 && (
+  <div style={{ marginTop: '2rem' }}>
+    <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Suggested Meals</h3>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
+      {mealData.map((entry, index) => {
+        const meal = entry.meal; // 🔥 unwrap the actual meal object
+        // console.log("MEAL CHOSEN", meal);
+        return (
+          <div
+            key={index}
+            style={{
+              background: '#1f1f27',
+              border: '1px solid #3b3b4f',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              color: '#f4f4f5',
+            }}
+          >
+            <h4 style={{ marginBottom: '0.5rem', color: '#a5b4fc' }}>
+              {meal.dish_name || 'Unnamed Dish'} ({chosenMealTimes[index]})
+            </h4>
+            
+            <p><strong>Restaurant:</strong> {meal.restaurant || 'Unknown'}</p>
+            <p><strong>Calories:</strong> {meal.calories}</p>
+            <p><strong>Protein:</strong> {meal.macros.protein}g</p>
+            <p><strong>Carbohydrates:</strong> {meal.macros.carbohydrates}g</p>
+            <p><strong>Fat:</strong> {meal.macros.fat}g</p>
+            {meal.notes && <p><strong>Notes:</strong> {meal.notes}</p>}
+          </div>
+        );
+      })}
+    </div>
+  </div>
+)}
+
+
 
         {/* Logout button at the very bottom */}
         <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '2.5rem' }}>

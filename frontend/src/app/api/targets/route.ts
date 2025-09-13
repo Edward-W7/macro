@@ -15,6 +15,8 @@ function getMealTotals(selectedMeals: any[]) {
 }
 // Scoring function to weight money difference most, then protein, calories, carbs, fat
 function scoreMealTotals(totals: any, goals: any) {
+    console.log("GOALS", goals);
+    console.log("totals", totals);
     const moneyBase = goals.money === 0 ? 1 : goals.money;
     const proteinBase = goals.protein === 0 ? 1 : goals.protein;
     const caloriesBase = goals.calories === 0 ? 1 : goals.calories;
@@ -31,7 +33,7 @@ function scoreMealTotals(totals: any, goals: any) {
 
 export async function POST(req: NextRequest) {
     await connectDB();
-    const { money, macros, calories, restrictions } = await req.json();
+    const { money, macros, calories, restrictions, exclusions } = await req.json();
 
     // Set goals based on initial constraints
     const goals = {
@@ -50,12 +52,18 @@ export async function POST(req: NextRequest) {
   let relaxFats = 0;
   let selectedMeals: any[] = [];
   let bestResult: any[] = [];
+  let cycles = 1;
   let bestScore = -10000;
+  // Exclude foods from specified restaurants, with specified proteins, and with specified dietary tags, in addition to blacklisted
+  let prunedFoods = await Food.find({
+    blacklisted: { $ne: true },
+    ...(exclusions?.restaurants?.length > 0 ? { restaurant: { $nin: exclusions.restaurants } } : {}),
+    ...(exclusions?.protein?.length > 0 ? { 'macros.protein': { $nin: exclusions.protein } } : {})
+  });
   for (let i: number = 0; i < 5; i++) {
     // 5 stages of relaxing constraints
     let fail = true;
-    let prunedFoods = await Food.find({ blacklisted: { $ne: true } });
-    for (let j: number = 0; j < 1000; j++) {
+    for (let j: number = 0; j < cycles; j++) {
         let remainingFlex = money + relaxFlex;
         let remainingProtein = macros.protein + relaxProtein;
         let remainingCalories = calories + relaxCalories;
@@ -66,13 +74,20 @@ export async function POST(req: NextRequest) {
         for (const meal of restrictions) {
             // Query for foods that fit this meal, flex, protein, and calorie constraints, and are not blacklisted
             const foods = prunedFoods
-                .filter(food => food.meal_type.includes(meal))
+                .filter(food => Object.values(food.meal_type).includes(meal))
                 .filter(food => food.money <= remainingFlex)
                 .filter(food => food.calories <= remainingCalories)
                 .filter(food => (food.macros.protein) <= remainingProtein) // assumes food.price exists
                 .filter(food => (food.macros.carbohydrates) <= remainingCarbs)
                 .filter(food => (food.macros.fat) <= remainingFat);
-
+            
+            console.log(`\n--- MEAL: ${meal} ---`);
+            console.log(`Available Foods: ${foods.length}`);
+            console.log(`Remaining Flex: ${remainingFlex}`);
+            console.log(`Remaining Calories: ${remainingCalories}`);
+            console.log(`Remaining Protein: ${remainingProtein}`);
+            console.log(`Remaining Carbs: ${remainingCarbs}`);
+            console.log(`Remaining Fat: ${remainingFat}`);
             if (foods.length > 0) {
                 let food;
                 // If this is the last meal in restrictions, pick the food with the highest protein
@@ -90,16 +105,23 @@ export async function POST(req: NextRequest) {
                 remainingFat -= food.macros.fat;
             } else {
                 finished = false;
+                break;
             }
         }
+        // console.log("FINISHED ", finished);
         if (!finished) {
             continue;
         }
         fail = false;
         let val = scoreMealTotals(getMealTotals(selectedMeals), goals);
+        // console.log("PRev best wcore", bestScore)
+        // console.log("Scored value", val);
         if (val >= bestScore) {
             bestScore = val;
             bestResult = selectedMeals;
+            // console.log("BEST RES", bestResult);
+            // selectedMeals = [];
+            // console.log("BEST RES", bestResult);
         }
 
     }
@@ -114,8 +136,10 @@ export async function POST(req: NextRequest) {
     } else {
         break;
     }
-
   }
+
+  console.log("FINAL RESULT")
+  console.log(bestResult);
 
   // Final pruning: filter selectedMeals to ensure all goals are met, or relax constraints if needed
 
