@@ -1,9 +1,18 @@
-import "../styles/globals.css";  // add at the top
+export const metadata = {
+  title: 'macro.',
+  description: 'Cool Description Here',
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+import './globals.css';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <html lang="en">
       <body>{children}</body>
     </html>
-  );
+  )
 }

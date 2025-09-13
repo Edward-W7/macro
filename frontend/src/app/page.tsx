@@ -1,9 +1,19 @@
+import Link from 'next/link';
 export default function Home() {
   return (
-    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-      <h1 className="text-4xl font-bold text-blue-500">
-        Tailwind is working!
-      </h1>
-    </div>
-  )
+    <>
+      <header>
+        <h1>Welcome to macro.</h1>
+      </header>
+      <main>
+            <div className="card">
+              <h2>Some Cheeky Message</h2>
+              <div className="button-group">
+                <Link href="/questionnaire" className="button">Get Started</Link>
+                <a href="#" className="button">Login</a>
+              </div>
+            </div>
+      </main>
+    </>
+  );
 }
