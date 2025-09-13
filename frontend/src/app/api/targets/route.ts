@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
   let relaxFats = 0;
   let selectedMeals: any[] = [];
   let bestResult: any[] = [];
-  let cycles = 1;
+  let cycles = 400;
   let bestScore = -10000;
   const lockedMeals = Array.isArray(locks) ? locks : [];
 
