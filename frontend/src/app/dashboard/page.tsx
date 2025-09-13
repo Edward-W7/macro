@@ -10,6 +10,30 @@ function isAuthenticated() {
 }
 
 export default function Dashboard() {
+  // State to track locked meals by meal time
+  const [lockedMeals, setLockedMeals] = useState<{ [mealTime: string]: boolean }>({});
+
+  // Lock icon SVGs
+  const LockIcon = ({ locked }: { locked: boolean }) => (
+    <span
+      style={{
+        display: 'inline-block',
+        marginRight: '0.7rem',
+        cursor: 'pointer',
+        transition: 'transform 0.2s',
+        transform: locked ? 'scale(1.2) rotate(-10deg)' : 'scale(1)',
+        color: locked ? '#6366f1' : '#a1a1aa',
+        verticalAlign: 'middle',
+      }}
+      aria-label={locked ? 'Unlock meal' : 'Lock meal'}
+    >
+      {locked ? (
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path d="M6 8V6a4 4 0 118 0v2h1a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h1zm2-2a2 2 0 114 0v2H8V6zm-3 4v6a1 1 0 001 1h10a1 1 0 001-1v-6a1 1 0 00-1-1H5a1 1 0 00-1 1z"/></svg>
+      ) : (
+        <svg width="22" height="22" viewBox="0 0 20 20" fill="currentColor"><path d="M6 8V6a4 4 0 118 0v2h1a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2h1zm2-2a2 2 0 114 0v2H8V6zm-3 4v6a1 1 0 001 1h10a1 1 0 001-1v-6a1 1 0 00-1-1H5a1 1 0 00-1 1z" opacity="0.4"/></svg>
+      )}
+    </span>
+  );
   // State to show/hide all filters
   const [filtersExpanded, setFiltersExpanded] = useState(true);
   // ...existing code...
@@ -92,6 +116,21 @@ export default function Dashboard() {
   const [authChecked, setAuthChecked] = useState(false);
   const [authed, setAuthed] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  // Helper to get locked meal objects
+  function getLockedMealsArray() {
+    // Map mealTime to locked, then find the meal object for each locked mealTime
+    return Object.entries(lockedMeals)
+      .filter(([_, isLocked]) => isLocked)
+      .map(([mealTime]) => {
+        // Find the meal for this mealTime
+        return mealData.find(entry => {
+          const mt = (entry.meal.meal_time || chosenMealTimes[mealData.indexOf(entry)] || '');
+          return mt === mealTime;
+        })?.meal;
+      })
+      .filter(Boolean);
+  }
 
   useEffect(() => {
     const authed = isAuthenticated();
@@ -321,37 +360,36 @@ export default function Dashboard() {
             className="button button-small"
             style={{ minWidth: '5.2rem', fontSize: '0.75rem', padding: '0.18rem 0.5rem' }}
             onClick={async (e) => {
-                // some logic here for requerying
-                e.currentTarget.blur();
-                const body = {
-                  money: 0,
-                  macros: {
-                    protein: 100,
-                    carbohydrates: 120,
-                    fat: 45,
-                  },
-                  calories: 1200,
-                  restrictions: chosenMealTimes,
-                  exclusions: {
-                    restaurants: exclusions.restaurants,
-                    protein: exclusions.proteins,
-                    dietary: exclusions.allergies,
-                  }
-                };
-                const res = await fetch('/api/targets', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify(body),
-                });
-                if (!res.ok) {
-                  console.error('API error:', res.statusText);
-                  return;
-                }
-                const data = await res.json();
-                setMealData(data.bestResult);
-                // console.log("DATA", data);
-                // console.log("CHOSEN DATA",mealData);
-                // console.log("LENGTH", mealData.length);
+              e.currentTarget.blur();
+              const lockedMealsData = getLockedMealsArray();
+              console.log('Locked meals to be sent:', lockedMealsData);
+              const body = {
+                money: 0,
+                macros: {
+                  protein: 100,
+                  carbohydrates: 120,
+                  fat: 45,
+                },
+                calories: 1200,
+                restrictions: chosenMealTimes,
+                exclusions: {
+                  restaurants: exclusions.restaurants,
+                  protein: exclusions.proteins,
+                  dietary: exclusions.allergies,
+                },
+                lockedMealsData,
+              };
+              const res = await fetch('/api/targets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+              });
+              if (!res.ok) {
+                console.error('API error:', res.statusText);
+                return;
+              }
+              const data = await res.json();
+              setMealData(data.bestResult);
             }}
           >
             🔄 Reroll
@@ -396,10 +434,20 @@ export default function Dashboard() {
                     const orderedMeals = [uniqueMeals[0], uniqueMeals[1], uniqueMeals[2]].filter(Boolean);
                     return orderedMeals.map((entry, sortedIdx) => {
                       const meal = entry.meal;
+                      const mealTime = entry.mealTime;
+                      const locked = lockedMeals[mealTime] || false;
                       return (
                         <tr key={sortedIdx} style={{ borderBottom: '1px solid #3b3b4f', minHeight: '56px', height: '56px', verticalAlign: 'middle' }}>
-                          <td style={{ padding: '0.7rem', fontWeight: 600, verticalAlign: 'middle', height: '56px' }}>{meal.dish_name || 'Unnamed Dish'}</td>
-                          <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{entry.mealTime}</td>
+                          <td style={{ padding: '0.7rem', fontWeight: 600, verticalAlign: 'middle', height: '56px', display: 'flex', alignItems: 'center' }}>
+                            <span
+                              onClick={() => setLockedMeals(lm => ({ ...lm, [mealTime]: !lm[mealTime] }))}
+                              style={{ display: 'flex', alignItems: 'center' }}
+                            >
+                              <LockIcon locked={locked} />
+                            </span>
+                            {meal.dish_name || 'Unnamed Dish'}
+                          </td>
+                          <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{mealTime}</td>
                           <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{meal.restaurant || 'Unknown'}</td>
                           <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{meal.calories}</td>
                           <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{meal.macros.protein}g</td>
