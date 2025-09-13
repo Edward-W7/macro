@@ -208,7 +208,7 @@ export default function Dashboard() {
 
     const calculatedMacros: TargetMacros = await macroResponse.json();
 
-    console.log('AI-Generated Macros:', calculatedMacros);
+    console.log('Identified Macro Requirements:', calculatedMacros);
 
     setTargetMacros(calculatedMacros);
 
