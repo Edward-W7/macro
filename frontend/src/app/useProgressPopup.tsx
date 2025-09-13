@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback, memo } from 'react';
+import { colors } from './colors';
 
 export function useProgressPopup() {
 
@@ -49,40 +50,58 @@ export function useProgressPopup() {
         left: 0,
         right: 0,
         margin: '0 auto',
-        width: '320px',
-        height: '60px',
-        background: '#23232b',
-        color: '#fff',
-        border: '2.5px solid #a1a1aa',
+        width: '340px',
+        minHeight: '60px',
+        height: 'auto',
+  background: colors.background,
+  color: colors.text,
+  border: `2.5px solid ${colors.secondary}`,
         borderRadius: '0',
         padding: '0',
         fontWeight: 700,
         fontSize: '1.13rem',
         zIndex: 2000,
-        boxShadow: '0 4px 18px rgba(0,0,0,0.18)',
+  boxShadow: colors.shadow,
         textAlign: 'center',
         letterSpacing: '0.01em',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '1.1rem',
         pointerEvents: 'none',
       }}>
-        <span style={{ fontWeight: 800, color: '#f4f4f5', fontSize: '1.15rem' }}>{popup.message}</span>
+        <div style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: '100%',
+          minHeight: '2.5em',
+        }}>
+          <span style={{
+            fontWeight: 800,
+            color: colors.text,
+            fontSize: '1.15rem',
+            width: '100%',
+            textAlign: 'center',
+            whiteSpace: 'pre-line',
+            wordBreak: 'break-word',
+            lineHeight: 1.3,
+          }}>{popup.message}</span>
+        </div>
         <div style={{
           width: '80%',
           height: '8px',
-          background: '#18181b',
+          background: colors.background,
           borderRadius: '0',
           overflow: 'hidden',
           marginTop: '0.2rem',
-          boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
+          boxShadow: colors.shadowInset
         }}>
           <div style={{
             width: `${progress}%`,
             height: '100%',
-            background: '#a1a1aa',
+            background: colors.secondary,
             borderRadius: '0',
             transition: 'width 0.13s linear',
           }} />

@@ -3,6 +3,7 @@
 // cookie shi
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
+import { colors } from '../colors';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 
@@ -49,11 +50,11 @@ export default function Login() {
         <Link href="/" style={{ textDecoration: 'none' }}>
           <div style={{
             display: 'inline-block',
-            border: '2px solid #3b82f6',
+            border: `2px solid ${colors.primary}`,
             borderRadius: '1rem',
             padding: '0.75rem 1.5rem',
             marginBottom: '0.7rem',
-            background: '#18181b',
+            background: colors.background,
             cursor: 'pointer',
           }}>
             <img src="/assets/macro2.png" alt="Macro Logo" style={{ width: '110px', display: 'block' }} />
@@ -74,7 +75,7 @@ export default function Login() {
           </div>
         </form>
         <div style={{ marginTop: '1.5rem', textAlign: 'center', width: '100%' }}>
-          <span style={{ color: '#a1a1aa', fontSize: '0.97rem' }}>Don't have an account?</span>
+          <span style={{ color: colors.secondary, fontSize: '0.97rem' }}>Don't have an account?</span>
           <div className="button-group" style={{ marginTop: '0.5rem' }}>
             <Link href="/register" className="button" style={{ padding: '0.5rem 1.5rem', fontSize: '0.95rem' }}>Register</Link>
           </div>
