@@ -152,7 +152,7 @@ for (const locked of lockedMeals as LockedMeal[]) {
         if (!finished) {
             continue;
         }
-        const mealOrder = ['Breakfast', 'Lunch', 'Dinner'];
+        const mealOrder = ['breakfast', 'lunch', 'dinner'];
 
         burnerMeals.sort((a, b) => {
             const mealTypeA = Object.keys(a)[0].toLowerCase();
@@ -160,7 +160,7 @@ for (const locked of lockedMeals as LockedMeal[]) {
 
             return mealOrder.indexOf(mealTypeA) - mealOrder.indexOf(mealTypeB);
         });
-
+        
         let selectedMeals = burnerMeals.map(obj => {
             const mealKey = Object.keys(obj)[0];
             const food = obj[mealKey];
@@ -174,6 +174,7 @@ for (const locked of lockedMeals as LockedMeal[]) {
         // console.log("PRev best wcore", bestScore)
         // console.log("Scored value", val);
         if (val >= bestScore) {
+            console.log("BEST", burnerMeals);
             bestScore = val;
             bestResult = selectedMeals;
             // console.log("BEST RES", bestResult);
