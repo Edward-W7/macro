@@ -10,14 +10,16 @@ export default function Questionnaire() {
   const [popup, setPopup] = useState<{ message: string; key: number } | null>(null);
   const [progress, setProgress] = useState(0);
   const popupTimeout = useRef<NodeJS.Timeout | null>(null);
+  const [restoredOnMount, setRestoredOnMount] = useState(false);
 
-  // Helper to show a popup with progress bar
   function showPopup(message: string, duration = 1800) {
     const key = Date.now();
     setPopup({ message, key });
     setProgress(100);
+
     if (popupTimeout.current) clearTimeout(popupTimeout.current);
-    // Animate progress bar
+
+    // animation
     let start = Date.now();
     function animate() {
       const elapsed = Date.now() - start;
@@ -32,7 +34,6 @@ export default function Questionnaire() {
     animate();
   }
 
-  // Restore data on mount
   useLayoutEffect(() => {
     if (typeof window !== 'undefined') {
       const raw = localStorage.getItem('questionnaire');
@@ -48,26 +49,27 @@ export default function Questionnaire() {
             setHeight(saved.height || '');
             setWeight(saved.weight || '');
             setAbout(saved.about || '');
+            setRestoredOnMount(true);
           }
         } catch {}
       }
     }
-    // Cleanup on unmount
-    return () => { if (popupTimeout.current) clearTimeout(popupTimeout.current); };
+
+    return () => {
+      if (popupTimeout.current) clearTimeout(popupTimeout.current);
+      setProgress(0);
+      setPopup(null);
+    };
   }, []);
 
-  // Show popup after state is set (on first render with restored data)
   useEffect(() => {
-    if (
-      (height !== '' || weight !== '' || about !== '') &&
-      typeof window !== 'undefined'
-    ) {
+    if (restoredOnMount) {
       showPopup('Restored saved data');
+      setRestoredOnMount(false);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [height, weight, about]);
+  }, [restoredOnMount]);
 
-  // Persist changes to localStorage on every change
+  // cookie
   useEffect(() => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('questionnaire', JSON.stringify({ height, weight, about }));

@@ -1,19 +1,15 @@
 "use client";
 
-// HIGHLIGHT: Add useRouter for redirect after registration
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useProgressPopup } from '../useProgressPopup';
 import { useCallback } from 'react';
 
-
 export default function Register() {
-  // HIGHLIGHT: Add router for redirect
   const router = useRouter();
   const { showPopup, ProgressPopup } = useProgressPopup();
   const showRegisterSuccess = useCallback(() => showPopup('Registration successful!'), [showPopup]);
 
-  // HIGHLIGHT: Registration handler
   async function handleRegister(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;

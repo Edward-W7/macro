@@ -8,7 +8,7 @@ export function useProgressPopup() {
   const endTimeRef = useRef<number>(0);
   const durationRef = useRef(1800);
 
-  // Only animate when popup is visible
+  // only animate when popup is visible
   useEffect(() => {
     if (!popup) return;
     let mounted = true;
