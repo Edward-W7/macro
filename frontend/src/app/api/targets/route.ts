@@ -20,6 +20,7 @@ type LockedMeal = {
 
 // Helper to compute totals for selectedMeals
 function getMealTotals(selectedMeals: any[]) {
+    // console.log("TOTALING MEALS", selectedMeals)
     return {
         protein: selectedMeals.reduce((sum, m) => sum + m[Object.keys(m)[0]].macros.protein, 0),
         calories: selectedMeals.reduce((sum, m) => sum + m[Object.keys(m)[0]].calories, 0),
@@ -30,8 +31,8 @@ function getMealTotals(selectedMeals: any[]) {
 }
 // Scoring function to weight money difference most, then protein, calories, carbs, fat
 function scoreMealTotals(totals: any, goals: any) {
-    console.log("GOALS", goals);
-    console.log("totals", totals);
+    // console.log("GOALS", goals);
+    // console.log("totals", totals);
     const moneyBase = goals.money === 0 ? 1 : goals.money;
     const proteinBase = goals.protein === 0 ? 1 : goals.protein;
     const caloriesBase = goals.calories === 0 ? 1 : goals.calories;
@@ -49,7 +50,7 @@ function scoreMealTotals(totals: any, goals: any) {
 export async function POST(req: NextRequest) {
     await connectDB();
     const { money, macros, calories, restrictions, exclusions, locks = [] } = await req.json();
-    console.log("PASSED", locks);
+    // console.log("PASSED", locks);
     // Set goals based on initial constraints
     const goals = {
         money,
@@ -59,6 +60,8 @@ export async function POST(req: NextRequest) {
         fat: macros.fat,
     };
 
+    const ogGoals = goals;
+
 
   let relaxCalories = 0;
   let relaxProtein = 0;
@@ -67,7 +70,7 @@ export async function POST(req: NextRequest) {
   let relaxFats = 0;
   let selectedMeals: any[] = [];
   let bestResult: any[] = [];
-  let cycles = 1000;
+  let cycles = 1;
   let bestScore = -10000;
   const lockedMeals = Array.isArray(locks) ? locks : [];
 
@@ -82,6 +85,8 @@ for (const locked of lockedMeals as LockedMeal[]) {
   goals.money          -= meal.money                  || 0;
 }
 
+// console.log("Goals", goals);
+
   // Exclude foods from specified restaurants, with specified proteins, and with specified dietary tags, in addition to blacklisted
   let prunedFoods = await Food.find({
     blacklisted: { $ne: true },
@@ -89,10 +94,10 @@ for (const locked of lockedMeals as LockedMeal[]) {
     ...(exclusions?.protein?.length > 0 ? { 'macros.protein': { $nin: exclusions.protein } } : {})
   });
 
-  const lockedMealTypes = Object.keys(locks); // ['Breakfast', 'Dinner']
+  const lockedMealTypes = locks.map(lock => Object.keys(lock)[0]);
   let filteredRestrictions = restrictions?.filter(r => !lockedMealTypes.includes(r));
-
-  console.log("LCOKED", lockedMeals)
+//   console.log("FILTERD RESTRICTION", filteredRestrictions);
+//   console.log("LCOKED", lockedMeals)
   for (let i: number = 0; i < 5; i++) {
     // 5 stages of relaxing constraints
     let fail = true;
@@ -125,7 +130,7 @@ for (const locked of lockedMeals as LockedMeal[]) {
                 let food;
                 // If this is the last meal in restrictions, pick the food with the highest protein
                 if (meal === filteredRestrictions[filteredRestrictions.length]) {
-                    const endIndex = Math.floor(length * 0.25); // 25% mark
+                    const endIndex = Math.floor(length * 0.1); // 10% mark
                     const randomIndex = Math.floor(Math.random() * endIndex);
                     food = foods.sort((a, b) => b.macros.protein - a.macros.protein)[randomIndex];
                 } else {
@@ -163,7 +168,7 @@ for (const locked of lockedMeals as LockedMeal[]) {
         });
 
         fail = false;
-        let val = scoreMealTotals(getMealTotals(selectedMeals), goals);
+        let val = scoreMealTotals(getMealTotals(selectedMeals), ogGoals);
         // console.log("PRev best wcore", bestScore)
         // console.log("Scored value", val);
         if (val >= bestScore) {
