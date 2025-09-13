@@ -3,13 +3,19 @@ import { connectDB } from '@/lib/db';
 import { hashPassword, signToken } from '@/lib/auth';
 import mongoose from 'mongoose';
 
+
 // HIGHLIGHT: Minimal User schema for demonstration
-const UserSchema = new mongoose.Schema({
+interface IUser extends mongoose.Document {
+  email: string;
+  password: string;
+}
+
+const UserSchema = new mongoose.Schema<IUser>({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 });
 
-const User = mongoose.models.User || mongoose.model('User', UserSchema);
+const User = (mongoose.models.User as mongoose.Model<IUser>) || mongoose.model<IUser>('User', UserSchema);
 
 export async function POST(req: Request) {
   await connectDB();
