@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     const { height, weight, gender, age, goal, description } = body;
 
     // Basic validation to ensure all required fields are present
-    if (!height || !weight || !gender || !age || !goal || !description) {
+    if (!height || !weight  || !age || !goal || !description) {
       return NextResponse.json(
         { error: { message: "Missing required fields. Please provide height, weight, gender, age, goal, and description." } },
         { status: 400 }
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
       macronutrient and caloric needs for a user based on their personal data and goals.
       Analyze the provided information and respond ONLY with a valid JSON object containing
       the recommended calories, protein, carbohydrates, and fat, along with a brief
-      justification for your recommendations. Do not include any text outside of the JSON object.
+      justification (1 sentence) for your recommendations. Do not include any text outside of the JSON object.
       The JSON object should have the following structure:
       {
         "calories": <integer>,
@@ -74,7 +74,6 @@ export async function POST(req: NextRequest) {
         { "role": "system", "content": system_prompt },
         { "role": "user", "content": user_data_prompt }
       ],
-      temperature: 0.2,
       response_format: { "type": "json_object" }
     });
 

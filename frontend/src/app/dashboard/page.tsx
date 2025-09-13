@@ -21,14 +21,11 @@ interface TargetMacros {
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
-  // Updated userProfile state to match the API's expected structure
+  // Updated userProfile state to use the new simplified structure
   const [userProfile, setUserProfile] = useState({
     height: 180,
     weight: 75,
-    gender: 'male',
-    age: 25,
-    goal: 'build lean muscle',
-    description: 'I am vegetarian and prefer a higher protein diet.'
+    goals: 'Build lean muscle. I am vegetarian and prefer a higher protein diet.'
   });
   const [targetMacros, setTargetMacros] = useState<TargetMacros | null>(null);
   const { showPopup, ProgressPopup } = useProgressPopup();
@@ -147,7 +144,7 @@ export default function Dashboard() {
     return result;
   }
 
-  // --- NEW: Main function to handle fetching macros and then meals ---
+  // --- Main function to handle fetching macros and then meals ---
   async function generatePlan() {
     setIsLoading(true);
     setMealData([]); // Clear previous meals on reroll
@@ -168,7 +165,6 @@ export default function Dashboard() {
 
       const calculatedMacros: TargetMacros = await macroResponse.json();
 
-      // *** HERE IS THE CONSOLE LOG YOU REQUESTED ***
       console.log('AI-Generated Macros:', calculatedMacros);
 
       setTargetMacros(calculatedMacros);
