@@ -1,8 +1,14 @@
 "use client";
+
+import { LockIcon } from "../LockIcon";
 import Cookies from 'js-cookie';
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+
 import { useProgressPopup } from '../useProgressPopup';
-import { useRouter } from "next/navigation";
+
+import { useRouter } from 'next/navigation';
+
+import { colors } from '../colors';
 
 // Auth check using cookie only
 function isAuthenticated() {
@@ -226,16 +232,18 @@ export default function Dashboard() {
   return (
     <>
       <ProgressPopup />
+
       <main>
+
         <div className="card">
           <a href="/" style={{ textDecoration: 'none' }}>
             <div style={{
               display: 'inline-block',
-              border: '2px solid #3b82f6',
+              border: `2px solid ${colors.primary}`,
               borderRadius: '1rem',
               padding: '0.75rem 1.5rem',
               marginBottom: '0.7rem',
-              background: '#18181b',
+              background: colors.cardBackground,
               cursor: 'pointer',
             }}>
               <img src="/assets/macro2.png" alt="Macro Logo" style={{ width: '110px', display: 'block' }} />
@@ -246,14 +254,14 @@ export default function Dashboard() {
 
           {targetMacros && (
             <div style={{
-              background: '#23232b',
-              border: '1.5px solid #6366f1',
+              background: colors.background,
+              border: `1.5px solid ${colors.borderHighlight}`,
               borderRadius: '0.5rem',
               padding: '1rem',
               margin: '1.5rem 0',
-              boxShadow: '0 1px 4px rgba(99,102,241,0.08)'
+              boxShadow: colors.cardShadow
             }}>
-              <h3 style={{ marginTop: 0, color: '#a5b4fc' }}>Your AI-Generated Daily Goals</h3>
+              <h3 style={{ marginTop: 0, color: colors.textHighlight }}>Your AI-Generated Daily Goals</h3>
               <p style={{ margin: '0.5rem 0 1rem 0', fontStyle: 'italic', color: '#d4d4d8' }}>
                 &quot;{targetMacros.reasoning}&quot;
               </p>
@@ -266,178 +274,210 @@ export default function Dashboard() {
             </div>
           )}
 
-          <button
-            type="button"
-            style={{
-              marginBottom: '0.7rem',
-              background: '#23232b',
-              color: '#f4f4f5',
-              border: '1.5px solid #6366f1',
-              borderRadius: '0.5rem',
-              padding: '0.5rem 0.5rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              fontSize: '1rem',
-              width: 'fit-content',
-              alignSelf: 'flex-end',
-              boxShadow: '0 1px 4px rgba(99,102,241,0.08)',
-            }}
-            onClick={() => setFiltersExpanded(f => !f)}
-          >
-            {filtersExpanded ? 'Hide Filters' : 'Show Filters'}
-          </button>
 
-          {filtersExpanded && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', margin: '1.2rem 0 1.5rem 0' }}>
-            {/* Restaurants */}
-            <div style={{ position: 'relative', width: '100%' }}>
-              <button type="button" className="input" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', fontWeight: 600, background: '#23232b', color: '#f4f4f5', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', padding: '0.6rem 1rem', minHeight: '2.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }} onClick={() => setOpenDropdowns(prev => ({ ...prev, restaurants: !prev.restaurants }))}>
-                <span style={{ marginRight: '0.5rem' }}>Exclude Restaurants:</span>
-                {exclusions.restaurants.length > 0 ? (
-                  exclusions.restaurants.map(item => (
-                    <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block' }}>{item}</span>
-                  ))
-                ) : (
-                  <span style={{ color: '#a1a1aa', fontWeight: 400 }}>None</span>
-                )}
-              </button>
-              {openDropdowns.restaurants && (
-                <div style={{ position: 'static', zIndex: 10, background: '#23232b', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: '0 2px 12px rgba(0,0,0,0.13)' }}>
-                  {restaurantOptions.map(option => (
-                    <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: '#f4f4f5' }}>
-                      <input type="checkbox" checked={exclusions.restaurants.includes(option)} onChange={() => handleDropdownChange(option, 'restaurants')} style={{ marginRight: '0.7em' }} />
-                      {option}
-                    </label>
-                  ))}
-                </div>
+        <button
+          type="button"
+          style={{
+            marginBottom: '0.7rem',
+            background: colors.background,
+            color: colors.text,
+            border: `1.5px solid ${colors.borderHighlight}`,
+            borderRadius: '0.5rem',
+            padding: '0.5rem 0.5rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            fontSize: '1rem',
+            width: 'fit-content',
+            alignSelf: 'flex-end',
+            boxShadow: colors.cardShadow,
+          }}
+          onClick={() => setFiltersExpanded(f => !f)}
+        >
+          {filtersExpanded ? 'Hide Filters' : 'Show Filters'}
+        </button>
+
+        {/* multiselect*/}
+
+        {filtersExpanded && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.7rem', margin: '1.2rem 0 1.5rem 0' }}>
+          {/* Restaurants */}
+
+          <div style={{ position: 'relative', width: '100%' }}>
+            <button
+              type="button"
+              className="input"
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontWeight: 600,
+                background: colors.background,
+                color: colors.text,
+                border: `1.5px solid ${colors.border}`,
+                borderRadius: '0.5rem',
+                padding: '0.6rem 1rem',
+                minHeight: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+              }}
+              onClick={() => setOpenDropdowns(prev => ({ ...prev, restaurants: !prev.restaurants }))}
+            >
+              <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Exclude Restaurants:</span>
+              {exclusions.restaurants.length > 0 ? (
+                exclusions.restaurants.map(item => (
+                  <span key={item} style={{ background: colors.tagBackground, color: colors.text, borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: `1.5px solid ${colors.tagBorder}`, boxShadow: colors.tagShadow, display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
+                ))
+              ) : (
+                <span style={{ color: colors.textMuted, fontWeight: 400, flex: '0 0 auto' }}>None</span>
               )}
-            </div>
-            {/* Proteins */}
-            <div style={{ position: 'relative', width: '100%' }}>
-              <button type="button" className="input" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', fontWeight: 600, background: '#23232b', color: '#f4f4f5', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', padding: '0.6rem 1rem', minHeight: '2.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }} onClick={() => setOpenDropdowns(prev => ({ ...prev, proteins: !prev.proteins }))}>
-                <span style={{ marginRight: '0.5rem' }}>Exclude Proteins:</span>
-                {exclusions.proteins.length > 0 ? (
-                  exclusions.proteins.map(item => (
-                    <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block' }}>{item}</span>
-                  ))
-                ) : (
-                  <span style={{ color: '#a1a1aa', fontWeight: 400 }}>None</span>
-                )}
-              </button>
-              {openDropdowns.proteins && (
-                <div style={{ position: 'static', zIndex: 10, background: '#23232b', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: '0 2px 12px rgba(0,0,0,0.13)' }}>
-                  {proteinOptions.map(option => (
-                    <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: '#f4f4f5' }}>
-                      <input type="checkbox" checked={exclusions.proteins.includes(option)} onChange={() => handleDropdownChange(option, 'proteins')} style={{ marginRight: '0.7em' }} />
-                      {option}
-                    </label>
-                  ))}
-                </div>
+            </button>
+            {openDropdowns.restaurants && (
+              <div style={{ position: 'static', zIndex: 10, background: colors.background, border: `1.5px solid ${colors.border}`, borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: colors.cardShadowStrong }}>
+                {restaurantOptions.map(option => (
+                  <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: colors.text }}>
+                    <input type="checkbox" checked={exclusions.restaurants.includes(option)} onChange={() => handleDropdownChange(option, 'restaurants')} style={{ marginRight: '0.7em' }} />
+                    {option}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Proteins */}
+          <div style={{ position: 'relative', width: '100%' }}>
+            <button
+              type="button"
+              className="input"
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontWeight: 600,
+                background: colors.background,
+                color: colors.text,
+                border: `1.5px solid ${colors.border}`,
+                borderRadius: '0.5rem',
+                padding: '0.6rem 1rem',
+                minHeight: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+              }}
+              onClick={() => setOpenDropdowns(prev => ({ ...prev, proteins: !prev.proteins }))}
+            >
+              <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Exclude Proteins:</span>
+              {exclusions.proteins.length > 0 ? (
+                exclusions.proteins.map(item => (
+                  <span key={item} style={{ background: colors.tagBackground, color: colors.text, borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: `1.5px solid ${colors.tagBorder}`, boxShadow: colors.tagShadow, display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
+                ))
+              ) : (
+                <span style={{ color: colors.textMuted, fontWeight: 400, flex: '0 0 auto' }}>None</span>
               )}
-            </div>
-            {/* Allergies/Dietary */}
-            <div style={{ position: 'relative', width: '100%' }}>
-              <button type="button" className="input" style={{ width: '100%', textAlign: 'left', cursor: 'pointer', fontWeight: 600, background: '#23232b', color: '#f4f4f5', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', padding: '0.6rem 1rem', minHeight: '2.5rem', display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '0.4rem' }} onClick={() => setOpenDropdowns(prev => ({ ...prev, allergies: !prev.allergies }))}>
-                <span style={{ marginRight: '0.5rem' }}>Allergies/Dietary:</span>
-                {exclusions.allergies.length > 0 ? (
-                  exclusions.allergies.map(item => (
-                    <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block' }}>{item}</span>
-                  ))
-                ) : (
-                  <span style={{ color: '#a1a1aa', fontWeight: 400 }}>None</span>
-                )}
-              </button>
-              {openDropdowns.allergies && (
-                <div style={{ position: 'static', zIndex: 10, background: '#23232b', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: '0 2px 12px rgba(99,102,241,0.13)' }}>
-                  {allergyOptions.map(option => (
-                    <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: '#f4f4f5' }}>
-                      <input type="checkbox" checked={exclusions.allergies.includes(option)} onChange={() => handleDropdownChange(option, 'allergies')} style={{ marginRight: '0.7em' }} />
-                      {option}
-                    </label>
-                  ))}
-                </div>
+            </button>
+            {openDropdowns.proteins && (
+              <div style={{ position: 'static', zIndex: 10, background: colors.background, border: `1.5px solid ${colors.border}`, borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: colors.cardShadowStrong }}>
+                {proteinOptions.map(option => (
+                  <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: colors.text }}>
+                    <input type="checkbox" checked={exclusions.proteins.includes(option)} onChange={() => handleDropdownChange(option, 'proteins')} style={{ marginRight: '0.7em' }} />
+                    {option}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Allergies/Dietary */}
+          <div style={{ position: 'relative', width: '100%' }}>
+            <button
+              type="button"
+              className="input"
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontWeight: 600,
+                background: '#23232b',
+                color: '#f4f4f5',
+                border: '1.5px solid #a1a1aa',
+                borderRadius: '0.5rem',
+                padding: '0.6rem 1rem',
+                minHeight: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+              }}
+              onClick={() => setOpenDropdowns(prev => ({ ...prev, allergies: !prev.allergies }))}
+            >
+              <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Allergies/Dietary:</span>
+              {exclusions.allergies.length > 0 ? (
+                exclusions.allergies.map(item => (
+                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
+                ))
+              ) : (
+                <span style={{ color: '#a1a1aa', fontWeight: 400, flex: '0 0 auto' }}>None</span>
               )}
-            </div>
-            {/* Meal Times */}
-            <div style={{ position: 'relative', width: '100%' }}>
-              <button
-                type="button"
-                className="input"
-                style={{
-                  width: '100%',
-                  textAlign: 'left',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  background: '#23232b',
-                  color: '#f4f4f5',
-                  border: '1.5px solid #a1a1aa',
-                  borderRadius: '0.5rem',
-                  padding: '0.6rem 1rem',
-                  minHeight: '2.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: '0.4rem',
-                }}
-                onClick={() => setOpenDropdowns(prev => ({ ...prev, mealtimes: !prev.mealtimes }))}
-              >
-                <span style={{ marginRight: '0.5rem' }}>Select Meal Times:</span>
-                {chosenMealTimes.length > 0 ? (
-                  chosenMealTimes.map(item => (
-                    <span key={item} style={{
-                      background: '#37373f',
-                      color: '#f4f4f5',
-                      borderRadius: '0.7em',
-                      padding: '0.18em 0.7em',
-                      fontWeight: 500,
-                      border: '1.5px solid #6366f1',
-                      boxShadow: '0 1px 4px rgba(99,102,241,0.08)',
-                      display: 'inline-block',
-                    }}>{item}</span>
-                  ))
-                ) : (
-                  <span style={{ color: '#a1a1aa', fontWeight: 400 }}>None</span>
-                )}
-              </button>
-              {openDropdowns.mealtimes && (
-                <div style={{
-                  position: 'static',
-                  zIndex: 10,
-                  background: '#23232b',
-                  border: '1.5px solid #a1a1aa',
-                  borderRadius: '0.5rem',
-                  width: '100%',
-                  marginTop: '0.2rem',
-                  maxHeight: '210px',
-                  overflowY: 'auto',
-                  boxShadow: '0 2px 12px rgba(99,102,241,0.13)',
-                }}>
-                  {mealTimeOptions.map(option => (
-                    <label
-                      key={option}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '0.5rem 1rem',
-                        cursor: 'pointer',
-                        fontSize: '1rem',
-                        color: '#f4f4f5',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={chosenMealTimes.includes(option)}
-                        onChange={() => handleMealTimeChange(option)}
-                        style={{ marginRight: '0.7em' }}
-                      />
-                      {option}
-                    </label>
-                  ))}
-                </div>
+            </button>
+            {openDropdowns.allergies && (
+              <div style={{ position: 'static', zIndex: 10, background: '#23232b', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: '0 2px 12px rgba(99,102,241,0.13)' }}>
+                {allergyOptions.map(option => (
+                  <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: '#f4f4f5' }}>
+                    <input type="checkbox" checked={exclusions.allergies.includes(option)} onChange={() => handleDropdownChange(option, 'allergies')} style={{ marginRight: '0.7em' }} />
+                    {option}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Meal Times */}
+          <div style={{ position: 'relative', width: '100%' }}>
+            <button
+              type="button"
+              className="input"
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                cursor: 'pointer',
+                fontWeight: 600,
+                background: '#23232b',
+                color: '#f4f4f5',
+                border: '1.5px solid #a1a1aa',
+                borderRadius: '0.5rem',
+                padding: '0.6rem 1rem',
+                minHeight: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                flexWrap: 'wrap',
+              }}
+              onClick={() => setOpenDropdowns(prev => ({ ...prev, mealtimes: !prev.mealtimes }))}
+            >
+              <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Select Meal Times:</span>
+              {chosenMealTimes.length > 0 ? (
+                chosenMealTimes.map(item => (
+                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
+                ))
+              ) : (
+                <span style={{ color: '#a1a1aa', fontWeight: 400, flex: '0 0 auto' }}>None</span>
               )}
-            </div>
-            </div>
-          )}
+            </button>
+            {openDropdowns.mealtimes && (
+              <div style={{ position: 'static', zIndex: 10, background: '#23232b', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: '0 2px 12px rgba(99,102,241,0.13)' }}>
+                {mealTimeOptions.map(option => (
+                  <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: '#f4f4f5' }}>
+                    <input type="checkbox" checked={chosenMealTimes.includes(option)} onChange={() => handleMealTimeChange(option)} style={{ marginRight: '0.7em' }} />
+                    {option}
+                  </label>
+                ))}
+              </div>
+            )}
+          </div>
+          </div>
+        )}
 
           {mealData.length > 0 ? (
             <div style={{ margin: '1rem 0', color: '#22c55e', fontWeight: 600 }}>
