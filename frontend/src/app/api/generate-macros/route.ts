@@ -36,11 +36,9 @@ export async function POST(req: NextRequest) {
     // Updated system prompt to handle missing data and match frontend types
     const system_prompt = `
       You are an expert nutritionist. Your task is to calculate daily macronutrient needs
-      based on the user's height, weight, and goals.
-      Please calculate the nutritional targets for the following user:
-      - Height: ${height} cm
-      - Weight: ${weight} kg
-      - Goals and Dietary Notes: "${goals}"
+      based on the user's height, weight, and goals. Since you are not given age or gender,
+      make a reasonable assumption (e.g., a moderately active young adult) unless the user's
+      goals specify otherwise.
       Respond ONLY with a valid JSON object. Do not include any text outside of the JSON object.
       The JSON object must have the following structure, using these exact keys:
       {
@@ -50,14 +48,28 @@ export async function POST(req: NextRequest) {
         "fat_grams": <integer>,
         "reasoning": "<a 1-sentence justification for your recommendations>"
       }
-`;
-console.log(system_prompt);
+    `;
+
+    // Updated user data prompt using the simplified 'goals' string
+    const user_data_prompt = `
+      Please calculate the nutritional targets for the following user:
+      - Height: ${height} cm
+      - Weight: ${weight} kg
+      - Goals and Dietary Notes: "${goals}"
+    `;
+
+    // Log the prompts to the server console for debugging
+    console.log("--- Sending Prompts to OpenAI ---");
+    console.log("System Prompt:", system_prompt);
+    console.log("User Prompt:", user_data_prompt);
+    console.log("---------------------------------");
 
     // Make the API call to OpenAI - 'temperature' parameter has been removed
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
-        { "role": "system", "content": system_prompt }
+        { "role": "system", "content": system_prompt },
+        { "role": "user", "content": user_data_prompt }
       ],
       response_format: { "type": "json_object" }
     });
