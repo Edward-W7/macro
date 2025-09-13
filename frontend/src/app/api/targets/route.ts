@@ -95,13 +95,13 @@ export async function POST(req: NextRequest) {
                 .filter(food => (food.macros.carbohydrates) <= remainingCarbs)
                 .filter(food => (food.macros.fat) <= remainingFat);
             
-            console.log(`\n--- MEAL: ${meal} ---`);
-            console.log(`Available Foods: ${foods.length}`);
-            console.log(`Remaining Flex: ${remainingFlex}`);
-            console.log(`Remaining Calories: ${remainingCalories}`);
-            console.log(`Remaining Protein: ${remainingProtein}`);
-            console.log(`Remaining Carbs: ${remainingCarbs}`);
-            console.log(`Remaining Fat: ${remainingFat}`);
+            // console.log(`\n--- MEAL: ${meal} ---`);
+            // console.log(`Available Foods: ${foods.length}`);
+            // console.log(`Remaining Flex: ${remainingFlex}`);
+            // console.log(`Remaining Calories: ${remainingCalories}`);
+            // console.log(`Remaining Protein: ${remainingProtein}`);
+            // console.log(`Remaining Carbs: ${remainingCarbs}`);
+            // console.log(`Remaining Fat: ${remainingFat}`);
             if (foods.length > 0) {
                 let food;
                 // If this is the last meal in restrictions, pick the food with the highest protein

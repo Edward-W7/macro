@@ -20,6 +20,15 @@ interface TargetMacros {
 }
 
 export default function Dashboard() {
+  // Add loading state for async actions
+  const [isLoading, setIsLoading] = useState(false);
+  // Add userProfile state for macro generation (replace with your actual default structure as needed)
+  const [userProfile, setUserProfile] = useState({
+    height: '',
+    weight: '',
+    about: ''
+  });
+  const [targetMacros, setTargetMacros] = useState<TargetMacros | null>(null);
   const { showPopup, ProgressPopup } = useProgressPopup();
   useEffect(() => {
     showPopup('Welcome back!');
@@ -440,7 +449,7 @@ export default function Dashboard() {
           </div>
         ) : (
           !isLoading && <div style={{ margin: '1rem 0', color: '#fdf911ff', fontWeight: 600 }}>
-             Click &quot;Generate Plan&quot; to start.
+             Click &quot;Reroll&quot; to start.
           </div>
         )}
 
