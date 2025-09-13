@@ -27,7 +27,7 @@ interface TargetMacros {
 
 export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(false);
-  // Initialize state with default/fallback values
+  // Updated userProfile state to use the new simplified structure
   const [userProfile, setUserProfile] = useState({
     height: 180,
     weight: 75,
@@ -40,38 +40,6 @@ export default function Dashboard() {
     showPopup('Welcome back!');
   }, [showPopup]);
 
-  // --- CORRECTED: Load user data from localStorage on component mount ---
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedData = localStorage.getItem('questionnaire');
-      console.log("1. Raw data from localStorage:", savedData);
-
-      if (savedData) {
-        try {
-          const parsedData = JSON.parse(savedData);
-          console.log("2. Parsed data:", parsedData);
-
-          if (parsedData.height && parsedData.weight && parsedData.about) {
-            // Convert units from imperial (questionnaire) to metric (API)
-            const heightInInches = parseFloat(parsedData.height);
-            const weightInPounds = parseFloat(parsedData.weight);
-
-            const heightInCm = Math.round(heightInInches * 2.54);
-            const weightInKg = Math.round(weightInPounds * 0.453592);
-
-            setUserProfile({
-              height: heightInCm,
-              weight: weightInKg,
-              goals: parsedData.about // Map 'about' from questionnaire to 'goals'
-            });
-          }
-        } catch (error) {
-          console.error("Failed to parse questionnaire data from localStorage", error);
-        }
-      }
-    }
-  }, []); // Empty dependency array ensures this runs only once
-
   const [lockedMeals, setLockedMeals] = useState<{ [mealTime: string]: boolean }>({});
 
   const LockIcon = ({ locked }: { locked: boolean }) => (
@@ -82,7 +50,7 @@ export default function Dashboard() {
         cursor: 'pointer',
         transition: 'transform 0.2s',
         transform: locked ? 'scale(1.2) rotate(-10deg)' : 'scale(1)',
-        color: locked ? '#6366f1' : '#a1a1aa',
+        color: locked ? colors.accent : colors.secondary,
         verticalAlign: 'middle',
       }}
       aria-label={locked ? 'Unlock meal' : 'Lock meal'}
@@ -188,69 +156,65 @@ export default function Dashboard() {
     setMealData([]); // Clear previous meals on reroll
     showPopup('Generating your new plan...');
 
-    // Console log to show the data being sent
-    console.log("--- Sending User Data to API ---");
-    console.log(userProfile);
-    console.log("--------------------------------");
+    try {
+      // Step 1: Call the generate-macros API with the user's profile
+      const macroResponse = await fetch('/api/generate-macros', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userProfile),
+      });
 
-    // Step 1: Call the generate-macros API with the user's profile
-    const macroResponse = await fetch('/api/generate-macros', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(userProfile),
-    });
+      if (!macroResponse.ok) {
+        const errorData = await macroResponse.json();
+        throw new Error(errorData.error.message || 'Failed to fetch macros.');
+      }
 
-    if (!macroResponse.ok) {
-      const errorData = await macroResponse.json();
-      // This will now throw an unhandled error if the response is not ok
-      throw new Error(errorData.error.message || 'Failed to fetch macros.');
+      const calculatedMacros: TargetMacros = await macroResponse.json();
+
+      console.log('AI-Generated Macros:', calculatedMacros);
+
+      setTargetMacros(calculatedMacros);
+
+      // Step 2: Use the AI-calculated macros to call the meal generation API
+      const locks = getLockedMealsArray();
+      const targetsBody = {
+        money: 0,
+        macros: {
+          protein: calculatedMacros.protein_grams,
+          carbohydrates: calculatedMacros.carbs_grams,
+          fat: calculatedMacros.fat_grams,
+        },
+        calories: calculatedMacros.calories,
+        restrictions: chosenMealTimes,
+        exclusions: {
+          restaurants: exclusions.restaurants,
+          protein: exclusions.proteins,
+          dietary: exclusions.allergies,
+        },
+        locks,
+      };
+
+      const targetsResponse = await fetch('/api/targets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(targetsBody),
+      });
+
+      if (!targetsResponse.ok) {
+        throw new Error(`Meal generation failed: ${targetsResponse.statusText}`);
+      }
+
+      const mealPlanData = await targetsResponse.json();
+      setMealData(mealPlanData.bestResult);
+  // showPopup('Your new meal plan is ready!');
+
+    } catch (error) {
+      console.error("An error occurred during plan generation:", error);
+      showPopup(`Error: ${error instanceof Error ? error.message : 'An unknown error occurred.'}`);
+    } finally {
+      setIsLoading(false);
     }
-
-    const calculatedMacros: TargetMacros = await macroResponse.json();
-
-    console.log('Identified Macro Requirements:', calculatedMacros);
-
-    setTargetMacros(calculatedMacros);
-
-    // Step 2: Use the AI-calculated macros to call the meal generation API
-    const locks = getLockedMealsArray();
-    const targetsBody = {
-      money: 0,
-      macros: {
-        protein: calculatedMacros.protein_grams,
-        carbohydrates: calculatedMacros.carbs_grams,
-        fat: calculatedMacros.fat_grams,
-      },
-      calories: calculatedMacros.calories,
-      restrictions: chosenMealTimes,
-      exclusions: {
-        restaurants: exclusions.restaurants,
-        protein: exclusions.proteins,
-        dietary: exclusions.allergies,
-      },
-      locks,
-    };
-
-    const targetsResponse = await fetch('/api/targets', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(targetsBody),
-    });
-
-    if (!targetsResponse.ok) {
-      // This will now throw an unhandled error if the response is not ok
-      throw new Error(`Meal generation failed: ${targetsResponse.statusText}`);
-    }
-
-    const mealPlanData = await targetsResponse.json();
-    setMealData(mealPlanData.bestResult);
-    showPopup('Your new meal plan is ready!');
-
-    // Note: If an error is thrown above, this line might not be reached,
-    // and the loading state will remain true. This is expected since error handling was removed.
-    setIsLoading(false);
   }
-
 
   useEffect(() => {
     const authed = isAuthenticated();
@@ -279,7 +243,7 @@ export default function Dashboard() {
               borderRadius: '1rem',
               padding: '0.75rem 1.5rem',
               marginBottom: '0.7rem',
-              background: colors.cardBackground,
+              background: colors.background,
               cursor: 'pointer',
             }}>
               <img src="/assets/macro2.png" alt="Macro Logo" style={{ width: '110px', display: 'block' }} />
@@ -291,13 +255,13 @@ export default function Dashboard() {
           {targetMacros && (
             <div style={{
               background: colors.background,
-              border: `1.5px solid ${colors.borderHighlight}`,
+              border: `1.5px solid ${colors.primary}`,
               borderRadius: '0.5rem',
               padding: '1rem',
               margin: '1.5rem 0',
-              boxShadow: colors.cardShadow
+              // boxShadow removed for palette simplicity
             }}>
-              <h3 style={{ marginTop: 0, color: colors.textHighlight }}>Your AI-Generated Daily Goals</h3>
+              <h3 style={{ marginTop: 0, color: colors.primary }}>Your AI-Generated Daily Goals</h3>
               <p style={{ margin: '0.5rem 0 1rem 0', fontStyle: 'italic', color: '#d4d4d8' }}>
                 &quot;{targetMacros.reasoning}&quot;
               </p>
@@ -317,7 +281,7 @@ export default function Dashboard() {
             marginBottom: '0.7rem',
             background: colors.background,
             color: colors.text,
-            border: `1.5px solid ${colors.borderHighlight}`,
+            border: `1.5px solid ${colors.primary}`,
             borderRadius: '0.5rem',
             padding: '0.5rem 0.5rem',
             fontWeight: 600,
@@ -325,7 +289,7 @@ export default function Dashboard() {
             fontSize: '1rem',
             width: 'fit-content',
             alignSelf: 'flex-end',
-            boxShadow: colors.cardShadow,
+            // boxShadow removed for palette simplicity
           }}
           onClick={() => setFiltersExpanded(f => !f)}
         >
@@ -349,10 +313,10 @@ export default function Dashboard() {
                 fontWeight: 600,
                 background: colors.background,
                 color: colors.text,
-                border: `1.5px solid ${colors.border}`,
+                border: `1.5px solid ${colors.secondary}`,
                 borderRadius: '0.5rem',
                 padding: '0.6rem 1rem',
-                minHeight: '2.5rem',
+                minHeight: '3.0rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
@@ -361,16 +325,18 @@ export default function Dashboard() {
               onClick={() => setOpenDropdowns(prev => ({ ...prev, restaurants: !prev.restaurants }))}
             >
               <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Exclude Restaurants:</span>
-              {exclusions.restaurants.length > 0 ? (
-                exclusions.restaurants.map(item => (
-                  <span key={item} style={{ background: colors.tagBackground, color: colors.text, borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: `1.5px solid ${colors.tagBorder}`, boxShadow: colors.tagShadow, display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
-                ))
-              ) : (
-                <span style={{ color: colors.textMuted, fontWeight: 400, flex: '0 0 auto' }}>None</span>
-              )}
+              <span style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3em', alignItems: 'center', height: 'auto', minHeight: '2.0em', width: '100%' }}>
+                {exclusions.restaurants.length > 0 ? (
+                  exclusions.restaurants.map(item => (
+                    <span key={item} style={{ background: colors.primary, color: colors.text, borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: `1.5px solid ${colors.primary}`, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', flex: '0 0 auto', height: '1.34em', lineHeight: '1.34em' }}>{item}</span>
+                  ))
+                ) : (
+                  <span style={{ color: colors.secondary, fontWeight: 400, flex: '0 0 auto', height: '1.34em', lineHeight: '1.34em', display: 'inline-flex', alignItems: 'center' }}>None</span>
+                )}
+              </span>
             </button>
             {openDropdowns.restaurants && (
-              <div style={{ position: 'static', zIndex: 10, background: colors.background, border: `1.5px solid ${colors.border}`, borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: colors.cardShadowStrong }}>
+              <div style={{ position: 'static', zIndex: 10, background: colors.background, border: `1.5px solid ${colors.secondary}`, borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto' }}>
                 {restaurantOptions.map(option => (
                   <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: colors.text }}>
                     <input type="checkbox" checked={exclusions.restaurants.includes(option)} onChange={() => handleDropdownChange(option, 'restaurants')} style={{ marginRight: '0.7em' }} />
@@ -393,10 +359,10 @@ export default function Dashboard() {
                 fontWeight: 600,
                 background: colors.background,
                 color: colors.text,
-                border: `1.5px solid ${colors.border}`,
+                border: `1.5px solid ${colors.secondary}`,
                 borderRadius: '0.5rem',
                 padding: '0.6rem 1rem',
-                minHeight: '2.5rem',
+                minHeight: '3.0rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
@@ -405,16 +371,18 @@ export default function Dashboard() {
               onClick={() => setOpenDropdowns(prev => ({ ...prev, proteins: !prev.proteins }))}
             >
               <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Exclude Proteins:</span>
-              {exclusions.proteins.length > 0 ? (
-                exclusions.proteins.map(item => (
-                  <span key={item} style={{ background: colors.tagBackground, color: colors.text, borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: `1.5px solid ${colors.tagBorder}`, boxShadow: colors.tagShadow, display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
-                ))
-              ) : (
-                <span style={{ color: colors.textMuted, fontWeight: 400, flex: '0 0 auto' }}>None</span>
-              )}
+              <span style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3em', alignItems: 'center', height: 'auto', minHeight: '2.0em', width: '100%' }}>
+                {exclusions.proteins.length > 0 ? (
+                  exclusions.proteins.map(item => (
+                    <span key={item} style={{ background: colors.primary, color: colors.text, borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: `1.5px solid ${colors.primary}`, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', flex: '0 0 auto', height: '1.34em', lineHeight: '1.34em' }}>{item}</span>
+                  ))
+                ) : (
+                  <span style={{ color: colors.secondary, fontWeight: 400, flex: '0 0 auto', height: '1.34em', lineHeight: '1.34em', display: 'inline-flex', alignItems: 'center' }}>None</span>
+                )}
+              </span>
             </button>
             {openDropdowns.proteins && (
-              <div style={{ position: 'static', zIndex: 10, background: colors.background, border: `1.5px solid ${colors.border}`, borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: colors.cardShadowStrong }}>
+              <div style={{ position: 'static', zIndex: 10, background: colors.background, border: `1.5px solid ${colors.secondary}`, borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto' }}>
                 {proteinOptions.map(option => (
                   <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: colors.text }}>
                     <input type="checkbox" checked={exclusions.proteins.includes(option)} onChange={() => handleDropdownChange(option, 'proteins')} style={{ marginRight: '0.7em' }} />
@@ -435,12 +403,12 @@ export default function Dashboard() {
                 textAlign: 'left',
                 cursor: 'pointer',
                 fontWeight: 600,
-                background: '#23232b',
-                color: '#f4f4f5',
-                border: '1.5px solid #a1a1aa',
+                background: colors.background,
+                color: colors.text,
+                border: `1.5px solid ${colors.secondary}`,
                 borderRadius: '0.5rem',
                 padding: '0.6rem 1rem',
-                minHeight: '2.5rem',
+                minHeight: '3.0rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
@@ -449,18 +417,20 @@ export default function Dashboard() {
               onClick={() => setOpenDropdowns(prev => ({ ...prev, allergies: !prev.allergies }))}
             >
               <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Allergies/Dietary:</span>
-              {exclusions.allergies.length > 0 ? (
-                exclusions.allergies.map(item => (
-                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
-                ))
-              ) : (
-                <span style={{ color: '#a1a1aa', fontWeight: 400, flex: '0 0 auto' }}>None</span>
-              )}
+              <span style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3em', alignItems: 'center', height: 'auto', minHeight: '2.0em', width: '100%' }}>
+                {exclusions.allergies.length > 0 ? (
+                  exclusions.allergies.map(item => (
+                    <span key={item} style={{ background: colors.primary, color: colors.text, borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: `1.5px solid ${colors.primary}`, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', flex: '0 0 auto', height: '1.34em', lineHeight: '1.34em' }}>{item}</span>
+                  ))
+                ) : (
+                  <span style={{ color: colors.secondary, fontWeight: 400, flex: '0 0 auto', height: '1.34em', lineHeight: '1.34em', display: 'inline-flex', alignItems: 'center' }}>None</span>
+                )}
+              </span>
             </button>
             {openDropdowns.allergies && (
-              <div style={{ position: 'static', zIndex: 10, background: '#23232b', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: '0 2px 12px rgba(99,102,241,0.13)' }}>
+              <div style={{ position: 'static', zIndex: 10, background: colors.background, border: `1.5px solid ${colors.secondary}`, borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto' }}>
                 {allergyOptions.map(option => (
-                  <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: '#f4f4f5' }}>
+                  <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: colors.text }}>
                     <input type="checkbox" checked={exclusions.allergies.includes(option)} onChange={() => handleDropdownChange(option, 'allergies')} style={{ marginRight: '0.7em' }} />
                     {option}
                   </label>
@@ -479,12 +449,12 @@ export default function Dashboard() {
                 textAlign: 'left',
                 cursor: 'pointer',
                 fontWeight: 600,
-                background: '#23232b',
-                color: '#f4f4f5',
-                border: '1.5px solid #a1a1aa',
+                background: colors.background,
+                color: colors.text,
+                border: `1.5px solid ${colors.secondary}`,
                 borderRadius: '0.5rem',
                 padding: '0.6rem 1rem',
-                minHeight: '2.5rem',
+                minHeight: '3.0rem',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '0.4rem',
@@ -493,18 +463,20 @@ export default function Dashboard() {
               onClick={() => setOpenDropdowns(prev => ({ ...prev, mealtimes: !prev.mealtimes }))}
             >
               <span style={{ marginRight: '0.5rem', flex: '0 0 auto' }}>Select Meal Times:</span>
-              {chosenMealTimes.length > 0 ? (
-                chosenMealTimes.map(item => (
-                  <span key={item} style={{ background: '#37373f', color: '#f4f4f5', borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: '1.5px solid #6366f1', boxShadow: '0 1px 4px rgba(99,102,241,0.08)', display: 'inline-block', flex: '0 0 auto' }}>{item}</span>
-                ))
-              ) : (
-                <span style={{ color: '#a1a1aa', fontWeight: 400, flex: '0 0 auto' }}>None</span>
-              )}
+              <span style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3em', alignItems: 'center', height: 'auto', minHeight: '2.0em', width: '100%' }}>
+                {chosenMealTimes.length > 0 ? (
+                  chosenMealTimes.map(item => (
+                    <span key={item} style={{ background: colors.primary, color: colors.text, borderRadius: '0.7em', padding: '0.18em 0.7em', fontWeight: 500, border: `1.5px solid ${colors.primary}`, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap', flex: '0 0 auto', height: '1.34em', lineHeight: '1.34em' }}>{item}</span>
+                  ))
+                ) : (
+                  <span style={{ color: colors.secondary, fontWeight: 400, flex: '0 0 auto', height: '1.34em', lineHeight: '1.34em', display: 'inline-flex', alignItems: 'center' }}>None</span>
+                )}
+              </span>
             </button>
             {openDropdowns.mealtimes && (
-              <div style={{ position: 'static', zIndex: 10, background: '#23232b', border: '1.5px solid #a1a1aa', borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto', boxShadow: '0 2px 12px rgba(99,102,241,0.13)' }}>
+              <div style={{ position: 'static', zIndex: 10, background: colors.background, border: `1.5px solid ${colors.secondary}`, borderRadius: '0.5rem', width: '100%', marginTop: '0.2rem', maxHeight: '210px', overflowY: 'auto' }}>
                 {mealTimeOptions.map(option => (
-                  <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: '#f4f4f5' }}>
+                  <label key={option} style={{ display: 'flex', alignItems: 'center', padding: '0.5rem 1rem', cursor: 'pointer', fontSize: '1rem', color: colors.text }}>
                     <input type="checkbox" checked={chosenMealTimes.includes(option)} onChange={() => handleMealTimeChange(option)} style={{ marginRight: '0.7em' }} />
                     {option}
                   </label>
@@ -517,7 +489,7 @@ export default function Dashboard() {
 
           {mealData.length > 0 ? (
             <div style={{ margin: '1rem 0', color: '#22c55e', fontWeight: 600 }}>
-              ✅ Here is your generated meal plan!
+              Here is your generated meal plan!
             </div>
           ) : (
             !isLoading && <div style={{ margin: '1rem 0', color: '#fdf911ff', fontWeight: 600 }}>
@@ -549,17 +521,17 @@ export default function Dashboard() {
             <div style={{ marginTop: '2rem' }}>
               <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem' }}>Suggested Meals</h3>
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', background: '#23232b', color: '#f4f4f5', borderRadius: '0.5rem', overflow: 'hidden' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', background: colors.background, color: colors.text, borderRadius: '0.5rem', overflow: 'hidden' }}>
                   <thead>
-                    <tr style={{ background: '#18181b', color: '#a5b4fc' }}>
-                      <th style={{ padding: '0.7rem', borderBottom: '1.5px solid #3b3b4f', fontWeight: 700 }}>Meal</th>
-                      <th style={{ padding: '0.7rem', borderBottom: '1.5px solid #3b3b4f', fontWeight: 700 }}>Meal Time</th>
-                      <th style={{ padding: '0.7rem', borderBottom: '1.5px solid #3b3b4f', fontWeight: 700 }}>Restaurant</th>
-                      <th style={{ padding: '0.7rem', borderBottom: '1.5px solid #3b3b4f', fontWeight: 700 }}>Calories</th>
-                      <th style={{ padding: '0.7rem', borderBottom: '1.5px solid #3b3b4f', fontWeight: 700 }}>Protein</th>
-                      <th style={{ padding: '0.7rem', borderBottom: '1.5px solid #3b3b4f', fontWeight: 700 }}>Carbs</th>
-                      <th style={{ padding: '0.7rem', borderBottom: '1.5px solid #3b3b4f', fontWeight: 700 }}>Fat</th>
-                      <th style={{ padding: '0.7rem', borderBottom: '1.5px solid #3b3b4f', fontWeight: 700 }}>Notes</th>
+                    <tr style={{ background: colors.secondary, color: colors.background }}>
+                      <th style={{ padding: '0.7rem', borderBottom: `1.5px solid ${colors.primary}`, fontWeight: 700 }}>Meal</th>
+                      <th style={{ padding: '0.7rem', borderBottom: `1.5px solid ${colors.primary}`, fontWeight: 700 }}>Meal Time</th>
+                      <th style={{ padding: '0.7rem', borderBottom: `1.5px solid ${colors.primary}`, fontWeight: 700 }}>Restaurant</th>
+                      <th style={{ padding: '0.7rem', borderBottom: `1.5px solid ${colors.primary}`, fontWeight: 700 }}>Calories</th>
+                      <th style={{ padding: '0.7rem', borderBottom: `1.5px solid ${colors.primary}`, fontWeight: 700 }}>Protein</th>
+                      <th style={{ padding: '0.7rem', borderBottom: `1.5px solid ${colors.primary}`, fontWeight: 700 }}>Carbs</th>
+                      <th style={{ padding: '0.7rem', borderBottom: `1.5px solid ${colors.primary}`, fontWeight: 700 }}>Fat</th>
+                      <th style={{ padding: '0.7rem', borderBottom: `1.5px solid ${colors.primary}`, fontWeight: 700 }}>Notes</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -583,23 +555,27 @@ export default function Dashboard() {
                         const mealTime = entry.mealTime;
                         const locked = lockedMeals[mealTime] || false;
                         return (
-                          <tr key={sortedIdx} style={{ borderBottom: '1px solid #3b3b4f', minHeight: '56px', height: '56px', verticalAlign: 'middle' }}>
-                            <td style={{ padding: '0.7rem', fontWeight: 600, verticalAlign: 'middle', height: '56px', display: 'flex', alignItems: 'center' }}>
-                              <span
-                                onClick={() => setLockedMeals(lm => ({ ...lm, [mealTime]: !lm[mealTime] }))}
-                                style={{ display: 'flex', alignItems: 'center' }}
-                              >
-                                <LockIcon locked={locked} />
-                              </span>
-                              {meal.dish_name || 'Unnamed Dish'}
+                          <tr key={sortedIdx} style={{ borderBottom: `1px solid ${colors.secondary}`, minHeight: '64px', height: '64px', verticalAlign: 'middle' }}>
+                            <td style={{ padding: '0.7rem', fontWeight: 600, verticalAlign: 'middle', height: '56px', color: colors.text }}>
+                              <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'row' }}>
+                                <span
+                                  onClick={() => setLockedMeals(lm => ({ ...lm, [mealTime]: !lm[mealTime] }))}
+                                  style={{ display: 'flex', alignItems: 'center', marginRight: '0.7rem', cursor: 'pointer' }}
+                                >
+                                  <LockIcon locked={locked} />
+                                </span>
+                                <span style={{ flex: 1, textAlign: 'center', width: '100%' }}>
+                                  {meal.dish_name || 'Unnamed Dish'}
+                                </span>
+                              </div>
                             </td>
-                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{mealTime}</td>
-                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{meal.restaurant || 'Unknown'}</td>
-                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{meal.calories}</td>
-                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{meal.macros.protein}g</td>
-                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{meal.macros.carbohydrates}g</td>
-                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{meal.macros.fat}g</td>
-                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>{meal.notes || ''}</td>
+                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px', color: colors.text }}>{mealTime}</td>
+                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px', color: colors.text }}>{meal.restaurant || 'Unknown'}</td>
+                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px', color: colors.text }}>{meal.calories}</td>
+                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px', color: colors.text }}>{meal.macros.protein}g</td>
+                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px', color: colors.text }}>{meal.macros.carbohydrates}g</td>
+                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px', color: colors.text }}>{meal.macros.fat}g</td>
+                            <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px', color: colors.text }}>{meal.notes || ''}</td>
                           </tr>
                         );
                       });
@@ -614,7 +590,7 @@ export default function Dashboard() {
                         return acc;
                       }, { calories: 0, protein: 0, carbs: 0, fat: 0 });
                       return (
-                        <tr style={{ background: '#18181b', fontWeight: 700, minHeight: '56px', height: '56px', verticalAlign: 'middle' }}>
+                        <tr style={{ background: colors.secondary, fontWeight: 700, minHeight: '56px', height: '56px', verticalAlign: 'middle', color: colors.background }}>
                           <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}>Daily Summary</td>
                           <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}></td>
                           <td style={{ padding: '0.7rem', verticalAlign: 'middle', height: '56px' }}></td>
