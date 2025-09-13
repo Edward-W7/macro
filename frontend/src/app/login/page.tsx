@@ -4,11 +4,23 @@
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 
 export default function Login() {
   // HIGHLIGHT: Add router for redirect after login
   const router = useRouter();
+
+  // Redirect to dashboard if already logged in
+  const [checked, setChecked] = useState(false);
+  useEffect(() => {
+    if (Cookies.get('loggedIn') === 'true') {
+      router.replace('/dashboard');
+    } else {
+      setChecked(true);
+    }
+  }, [router]);
+  if (!checked) return null;
 
   // HIGHLIGHT: Login handler to set cookie
   // HIGHLIGHT: Login handler to POST to /api/login
