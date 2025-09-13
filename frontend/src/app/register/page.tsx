@@ -1,11 +1,44 @@
+"use client";
+
+// HIGHLIGHT: Add useRouter for redirect after registration
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+
 export default function Register() {
+  // HIGHLIGHT: Add router for redirect
+  const router = useRouter();
+
+  // HIGHLIGHT: Registration handler
+  async function handleRegister(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const email = form.email.value;
+    const password = form.password.value;
+
+    // HIGHLIGHT: Send POST request to /api/register
+    const res = await fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (res.ok) {
+      // HIGHLIGHT: Registration successful, redirect to login
+      router.push('/login');
+    } else {
+      // HIGHLIGHT: Show error
+      const data = await res.json();
+      alert(data.error || 'Registration failed');
+    }
+  }
+
   return (
     <main>
       <div className="card">
         <h2>Register to save your information!</h2>
-  <form style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', alignItems: 'flex-start', marginTop: '2rem', marginBottom: '1.5rem' }}>
+        {/* HIGHLIGHT: Add onSubmit handler */}
+        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', alignItems: 'flex-start', marginTop: '2rem', marginBottom: '1.5rem' }}>
           <label className="form-label-row">
             <span>Email:</span>
             <input type="email" name="email" className="input" style={{ width: '16rem' }} required />

@@ -11,12 +11,30 @@ export default function Login() {
   const router = useRouter();
 
   // HIGHLIGHT: Login handler to set cookie
-  function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  // HIGHLIGHT: Login handler to POST to /api/login
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // HIGHLIGHT: Set a login cookie (for demo, set a flag; in real app, set a token)
-    Cookies.set('loggedIn', 'true', { expires: 7 }); // 7 days expiry
-    // HIGHLIGHT: Redirect to dashboard
-    router.push('/dashboard');
+    const form = e.currentTarget;
+    const email = form.email.value;
+    const password = form.password.value;
+
+    // HIGHLIGHT: Send POST request to /api/login
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (res.ok) {
+      // HIGHLIGHT: Set a login cookie (for demo, set a flag; in real app, set a token)
+      Cookies.set('loggedIn', 'true', { expires: 7 }); // 7 days expiry
+      // HIGHLIGHT: Redirect to dashboard
+      router.push('/dashboard');
+    } else {
+      // HIGHLIGHT: Show error
+      const data = await res.json();
+      alert(data.error || 'Login failed');
+    }
   }
 
   return (

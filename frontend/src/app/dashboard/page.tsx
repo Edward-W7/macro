@@ -1,9 +1,36 @@
 "use client";
-// --- No login test code ---
-import { useState } from "react";
+import Cookies from 'js-cookie'; // HIGHLIGHT: Import js-cookie
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+// HIGHLIGHT: Auth check using cookie only
+function isAuthenticated() {
+  if (typeof window === "undefined") return false;
+  return Cookies.get('loggedIn') === 'true';
+}
 
 export default function Dashboard() {
+  const router = useRouter();
+  const [authChecked, setAuthChecked] = useState(false);
+  const [authed, setAuthed] = useState(false);
   const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    const authed = isAuthenticated();
+    setAuthed(authed);
+    setAuthChecked(true);
+    if (!authed) {
+      router.replace("/login");
+    }
+  }, [router]);
+
+  if (!authChecked) {
+    return null; // or a loading spinner/message
+  }
+  if (!authed) {
+    return null;
+  }
+  // HIGHLIGHT: Main dashboard UI with meal info, macro summary, etc.
   return (
     <main>
       <div className="card">
@@ -82,52 +109,21 @@ export default function Dashboard() {
             🔄 Reroll
           </button>
         </div>
+
+        {/* Logout button at the very bottom */}
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', marginTop: '2.5rem' }}>
+          <button
+            className="button"
+            style={{ padding: '0.4rem 1.1rem', fontSize: '0.95rem', minWidth: 0 }}
+            onClick={() => {
+              Cookies.remove('loggedIn');
+              router.replace('/');
+            }}
+          >
+            Logout
+          </button>
+        </div>
       </div>
     </main>
   );
 }
-
-
-// "use client";
-// import { useEffect } from "react";
-// import { useRouter } from "next/navigation";
-
-// // Dummy authentication check (replace with real logic)
-// function isAuthenticated() {
-//   if (typeof window === "undefined") return false;
-//   // Example: check for a token in sessionStorage
-//   return !!sessionStorage.getItem("authToken");
-// }
-
-// import { useState } from "react";
-
-// export default function Dashboard() {
-//   const router = useRouter();
-//   const [authChecked, setAuthChecked] = useState(false);
-//   const [authed, setAuthed] = useState(false);
-
-//   useEffect(() => {
-//     const authed = isAuthenticated();
-//     setAuthed(authed);
-//     setAuthChecked(true);
-//     if (!authed) {
-//       router.replace("/login");
-//     }
-//   }, [router]);
-
-//   if (!authChecked) {
-//     return null; // or a loading spinner/message
-//   }
-//   if (!authed) {
-//     return null;
-//   }
-//   return (
-//     <main>
-//       <div className="card">
-//         <h2>Welcome to your dashboard!</h2>
-//         <p>You are now logged in. Here you can view your macro targets and track your progress.</p>
-//         {/* Add more dashboard content here */}
-//       </div>
-//     </main>
-//   );
-// }
