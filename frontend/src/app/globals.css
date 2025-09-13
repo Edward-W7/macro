@@ -1,10 +1,19 @@
+/* Color variables for easy theme changes */
+:root {
+  --color-primary: #3b82f6;
+  --color-primary-bg: #23232b;
+  --color-primary-hover: #3b82f6;
+  --color-primary-text: #3b82f6;
+  --color-primary-text-hover: #fff;
+  --color-border: #3b82f6;
+}
 .button.button-small {
   min-width: 0;
   padding: 0.4rem 1.1rem;
   font-size: 0.95rem;
-  border: 2px solid #6b7280 !important;
+  border: 2px solid var(--color-border) !important;
   color: #d1d5db !important;
-  background: #23232b;
+  background: var(--color-primary-bg);
   transition: background 0.2s, color 0.2s, border 0.2s;
 }
 .button.button-small:hover, .button.button-small:focus, .button.button-small:active {
@@ -84,9 +93,9 @@ header {
   display: inline-block;
   padding: 0.75rem 2rem;
   min-width: 8.5rem;
-  background: #23232b;
-  color: #3b82f6;
-  border: 2px solid #3b82f6;
+  background: var(--color-primary-bg);
+  color: var(--color-primary-text);
+  border: 2px solid var(--color-border);
   border-radius: 0.5rem;
   font-size: 1rem;
   font-weight: 600;
@@ -95,8 +104,8 @@ header {
   cursor: pointer;
 }
 .button:hover, .button:focus {
-  background: #3b82f6;
-  color: #fff;
+  background: var(--color-primary-hover);
+  color: var(--color-primary-text-hover);
 }
 
 .card {

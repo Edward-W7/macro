@@ -1,6 +1,7 @@
 "use client";
-import Cookies from 'js-cookie';
-import { useEffect, useState } from "react";
+import Cookies from 'js-cookie'; // HIGHLIGHT: Import js-cookie
+import { useEffect, useState, useCallback } from "react";
+import { useProgressPopup } from '../useProgressPopup';
 import { useRouter } from "next/navigation";
 
 // Auth check using cookie only
@@ -19,20 +20,10 @@ interface TargetMacros {
 }
 
 export default function Dashboard() {
-  // State for user's profile info. In a real app, this would be fetched or come from a form.
-  const [userProfile, setUserProfile] = useState({
-    height: 180,
-    weight: 75,
-    gender: 'male',
-    age: 25,
-    goal: 'build lean muscle',
-    description: 'I want a high-protein diet but I am vegetarian.'
-  });
-
-  // State for the AI-calculated target macros
-  const [targetMacros, setTargetMacros] = useState<TargetMacros | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-
+  const { showPopup, ProgressPopup } = useProgressPopup();
+  useEffect(() => {
+    showPopup('Welcome back!');
+  }, [showPopup]);
   // State to track locked meals by meal time
   const [lockedMeals, setLockedMeals] = useState<{ [mealTime: string]: boolean }>({});
 
@@ -224,8 +215,10 @@ export default function Dashboard() {
     return null;
   }
   return (
-    <main>
-      <div className="card">
+    <>
+      <ProgressPopup />
+      <main>
+  <div className="card">
         <a href="/" style={{ textDecoration: 'none' }}>
           <div style={{
             display: 'inline-block',
@@ -451,17 +444,53 @@ export default function Dashboard() {
           </div>
         )}
 
-        <div style={{ display: 'flex', justifyContent: 'flex-end', width: '100%', marginTop: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', width: '100%', margin: '0.7rem 0 0.7rem 0' }}>
           <button
-            className="button"
-            style={{ minWidth: '8rem' }}
-            disabled={isLoading}
+            className="button button-large"
+            style={{
+              minWidth: '10rem',
+              fontSize: '1.15rem',
+              padding: '0.6rem 2.2rem',
+              fontWeight: 700,
+              borderRadius: '0.7rem',
+              boxShadow: '0 2px 8px rgba(59,130,246,0.13)',
+            }}
             onClick={async (e) => {
               e.currentTarget.blur();
-              generatePlan();
+              const lockedMealsData = getLockedMealsArray();
+              console.log('Locked meals to be sent:', lockedMealsData);
+              const body = {
+                money: 0,
+                macros: {
+                  protein: 100,
+                  carbohydrates: 120,
+                  fat: 45,
+                },
+                calories: 1200,
+                restrictions: chosenMealTimes,
+                exclusions: {
+                  restaurants: exclusions.restaurants,
+                  protein: exclusions.proteins,
+                  dietary: exclusions.allergies,
+                },
+                lockedMealsData,
+              };
+              const res = await fetch('/api/targets', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+              });
+              if (!res.ok) {
+                console.error('API error:', res.statusText);
+                return;
+              }
+              const data = await res.json();
+              console.log('Raw backend output:', data);
+              setMealData(data.bestResult);
+              showPopup('Rerolled your meals!');
             }}
           >
-            {isLoading ? 'Generating...' : (mealData.length > 0 ? '🔄 Reroll' : 'Generate Plan')}
+            🔄 Reroll
           </button>
         </div>
         {mealData.length > 0 && (
@@ -565,6 +594,7 @@ export default function Dashboard() {
           </button>
         </div>
       </div>
-    </main>
+      </main>
+    </>
   );
 }

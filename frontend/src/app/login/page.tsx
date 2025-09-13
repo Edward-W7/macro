@@ -38,12 +38,9 @@ export default function Login() {
     });
 
     if (res.ok) {
-      // HIGHLIGHT: Set a login cookie (for demo, set a flag; in real app, set a token)
-      Cookies.set('loggedIn', 'true', { expires: 7 }); // 7 days expiry
-      // HIGHLIGHT: Redirect to dashboard
+      Cookies.set('loggedIn', 'true', { expires: 7 });
       router.push('/dashboard');
     } else {
-      // HIGHLIGHT: Show error
       const data = await res.json();
       alert(data.error || 'Login failed');
     }
