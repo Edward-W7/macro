@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
   let relaxFats = 0;
   let selectedMeals: any[] = [];
   let bestResult: any[] = [];
-  let cycles = 1;
+  let cycles = 10;
   let bestScore = -10000;
   const lockedMeals = Array.isArray(locks) ? locks : [];
 
@@ -96,7 +96,7 @@ for (const locked of lockedMeals as LockedMeal[]) {
 
   const lockedMealTypes = locks.map(lock => Object.keys(lock)[0]);
   let filteredRestrictions = restrictions?.filter(r => !lockedMealTypes.includes(r));
-//   console.log("FILTERD RESTRICTION", filteredRestrictions);
+  console.log("FILTERD RESTRICTION", filteredRestrictions);
 //   console.log("LCOKED", lockedMeals)
   for (let i: number = 0; i < 5; i++) {
     // 5 stages of relaxing constraints
@@ -107,7 +107,7 @@ for (const locked of lockedMeals as LockedMeal[]) {
         let remainingCalories = goals.calories + relaxCalories;
         let remainingCarbs = goals.carbohydrates + relaxCarbohydrates;
         let remainingFat = goals.fat + relaxFats;
-        let burnerMeals = lockedMeals
+        let burnerMeals = JSON.parse(JSON.stringify(lockedMeals));
         let finished = true;
         for (const meal of filteredRestrictions) {
             // Query for foods that fit this meal, flex, protein, and calorie constraints, and are not blacklisted
@@ -166,6 +166,8 @@ for (const locked of lockedMeals as LockedMeal[]) {
             const food = obj[mealKey];
             return { meal: food };
         });
+        // console.log("BURNER LENGTH", burnerMeals.length)
+        // console.log("selectedMeals Length", selectedMeals.length)
 
         fail = false;
         let val = scoreMealTotals(getMealTotals(selectedMeals), ogGoals);
