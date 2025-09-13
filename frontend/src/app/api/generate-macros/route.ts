@@ -58,8 +58,9 @@ export async function POST(req: NextRequest) {
       - Goals and Dietary Notes: "${goals}"
     `;
 
+    // Make the API call to OpenAI - 'temperature' parameter has been removed
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini", // Using a more recent and efficient model
+      model: "gpt-4o-mini",
       messages: [
         { "role": "system", "content": system_prompt },
         { "role": "user", "content": user_data_prompt }
