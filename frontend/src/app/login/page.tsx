@@ -4,24 +4,67 @@
 import Cookies from 'js-cookie';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useState, useEffect } from 'react';
 
 
 export default function Login() {
   // HIGHLIGHT: Add router for redirect after login
   const router = useRouter();
 
+  // Redirect to dashboard if already logged in
+  const [checked, setChecked] = useState(false);
+  useEffect(() => {
+    if (Cookies.get('loggedIn') === 'true') {
+      router.replace('/dashboard');
+    } else {
+      setChecked(true);
+    }
+  }, [router]);
+  if (!checked) return null;
+
   // HIGHLIGHT: Login handler to set cookie
-  function handleLogin(e: React.FormEvent<HTMLFormElement>) {
+  // HIGHLIGHT: Login handler to POST to /api/login
+  async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    // HIGHLIGHT: Set a login cookie (for demo, set a flag; in real app, set a token)
-    Cookies.set('loggedIn', 'true', { expires: 7 }); // 7 days expiry
-    // HIGHLIGHT: Redirect to dashboard
-    router.push('/dashboard');
+    const form = e.currentTarget;
+    const email = form.email.value;
+    const password = form.password.value;
+
+    // HIGHLIGHT: Send POST request to /api/login
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (res.ok) {
+      // HIGHLIGHT: Set a login cookie (for demo, set a flag; in real app, set a token)
+      Cookies.set('loggedIn', 'true', { expires: 7 }); // 7 days expiry
+      // HIGHLIGHT: Redirect to dashboard
+      router.push('/dashboard');
+    } else {
+      // HIGHLIGHT: Show error
+      const data = await res.json();
+      alert(data.error || 'Login failed');
+    }
   }
 
   return (
     <main>
       <div className="card">
+        <Link href="/" style={{ textDecoration: 'none' }}>
+          <div style={{
+            display: 'inline-block',
+            border: '2px solid #3b82f6',
+            borderRadius: '1rem',
+            padding: '0.75rem 1.5rem',
+            marginBottom: '0.7rem',
+            background: '#18181b',
+            cursor: 'pointer',
+          }}>
+            <img src="/assets/macro2.png" alt="Macro Logo" style={{ width: '110px', display: 'block' }} />
+          </div>
+        </Link>
         <h2>Login</h2>
         {/* HIGHLIGHT: Add onSubmit handler to form */}
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', alignItems: 'flex-start', marginTop: '2rem', marginBottom: '1.5rem' }}>
