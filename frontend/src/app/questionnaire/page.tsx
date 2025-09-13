@@ -1,5 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
+import { colors } from '../colors';
 import { useEffect, useRef, useState, useLayoutEffect } from "react";
 
 export default function Questionnaire() {
@@ -90,11 +91,11 @@ export default function Questionnaire() {
         <a href="/" style={{ textDecoration: 'none' }}>
           <div style={{
             display: 'inline-block',
-            border: '2px solid #3b82f6',
+              border: `2px solid ${colors.primary}`,
             borderRadius: '1rem',
             padding: '0.75rem 1.5rem',
             marginBottom: '0.7rem',
-            background: '#18181b',
+              background: colors.background,
             cursor: 'pointer',
           }}>
             <img src="/assets/macro2.png" alt="Macro Logo" style={{ width: '110px', display: 'block' }} />
@@ -157,15 +158,13 @@ export default function Questionnaire() {
             margin: '0 auto',
             width: '320px',
             height: '60px',
-            background: '#23232b',
-            color: '#fff',
-            border: '2.5px solid #a1a1aa',
+            background: colors.background,
+            color: colors.text,
+            border: `2.5px solid ${colors.secondary}`,
             borderRadius: '0',
-            padding: '0',
             fontWeight: 700,
-            fontSize: '1.13rem',
             zIndex: 20,
-            boxShadow: '0 4px 18px rgba(0,0,0,0.18)',
+            boxShadow: colors.shadow,
             textAlign: 'center',
             letterSpacing: '0.01em',
             display: 'flex',
@@ -174,22 +173,22 @@ export default function Questionnaire() {
             justifyContent: 'center',
             gap: '1.1rem',
           }}>
-            <span style={{ fontWeight: 800, color: '#f4f4f5', fontSize: '1.15rem' }}>{popup.message}</span>
+            <span style={{ fontWeight: 800, color: colors.text, fontSize: '1.15rem' }}>{popup.message}</span>
             <div style={{
               width: '80%',
               height: '8px',
-              background: '#18181b',
+              background: colors.background,
               borderRadius: '0',
               overflow: 'hidden',
               marginTop: '0.2rem',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.08)'
+              boxShadow: colors.shadowInset
             }}>
               <div style={{
                 width: `${progress}%`,
-                height: '100%',
-                background: '#a1a1aa',
+                background: colors.secondary,
                 borderRadius: '0',
                 transition: 'width 0.13s linear',
+                height: '100%',
               }} />
             </div>
           </div>

@@ -1,20 +1,13 @@
 // Centralized color palette for the Macro app
 // Use these variables in your inline styles and components
 
+// 5-color palette: primary, secondary, accent, background, text
 export const colors = {
-  background: '#23232b',
-  cardBackground: '#18181b',
-  border: '#a1a1aa',
-  borderHighlight: '#6366f1',
-  text: '#f4f4f5',
-  textMuted: '#a1a1aa',
-  textHighlight: '#a5b4fc',
-  tagBackground: '#37373f',
-  tagBorder: '#6366f1',
-  tagShadow: '0 1px 4px rgba(99,102,241,0.08)',
-  cardShadow: '0 1px 4px rgba(99,102,241,0.08)',
-  cardShadowStrong: '0 2px 12px rgba(99,102,241,0.13)',
-  success: '#22c55e',
-  warning: '#fdf911ff',
-  primary: '#3b82f6',
+  primary: '#985f99',
+  secondary: '#9684a1',
+  accent: '#1282a2',
+  background: '#0A1128',
+  text: '#fefcfb',
+  shadow: '0 4px 18px rgba(0,0,0,0.18)',
+  shadowInset: '0 1px 4px rgba(0,0,0,0.08)',
 };

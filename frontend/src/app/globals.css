@@ -1,31 +1,31 @@
 /* Color variables for easy theme changes */
 :root {
-  --color-primary: #3b82f6;
-  --color-primary-bg: #23232b;
-  --color-primary-hover: #3b82f6;
-  --color-primary-text: #3b82f6;
-  --color-primary-text-hover: #fff;
-  --color-border: #3b82f6;
+  --color-primary: #985f99;
+  --color-primary-bg: #0A1128;
+  --color-primary-hover: #9684a1;
+  --color-primary-text: #fefcfb;
+  --color-primary-text-hover: #0A1128;
+  --color-border: #985f99;
 }
 .button.button-small {
   min-width: 0;
   padding: 0.4rem 1.1rem;
   font-size: 0.95rem;
   border: 2px solid var(--color-border) !important;
-  color: #d1d5db !important;
+  color: var(--color-primary-text) !important;
   background: var(--color-primary-bg);
   transition: background 0.2s, color 0.2s, border 0.2s;
 }
 .button.button-small:hover, .button.button-small:focus, .button.button-small:active {
-  background: #32323a;
-  color: #fff !important;
-  border-color: #fff !important;
+  background: var(--color-primary-hover);
+  color: var(--color-primary-text-hover) !important;
+  border-color: var(--color-primary-hover) !important;
 }
 .input {
   border-radius: 0.5rem;
   border: 1px solid #444;
-  background: #18181b;
-  color: #f4f4f5;
+  background: #0A1128;
+  color: #fefcfb;
   padding: 0.5rem;
   font-size: 1rem;
   text-align: right;
@@ -42,8 +42,8 @@
 .input-textarea {
   border-radius: 0.5rem;
   border: 1px solid #444;
-  background: #18181b;
-  color: #f4f4f5;
+  background: #0A1128;
+  color: #fefcfb;
   padding: 0.75rem;
   font-size: 1rem;
   width: 100%;
@@ -51,8 +51,8 @@
   resize: vertical;
 }
 body {
-  background: #18181b;
-  color: #f4f4f5;
+  background: #0A1128;
+  color: #fefcfb;
   font-family: system-ui, sans-serif;
   margin: 0;
   min-height: 100vh;
@@ -69,7 +69,7 @@ header {
 }
 
 .card {
-  background: #27272a;
+  background: #23232b;
   border-radius: 1rem;
   padding: 2rem 8rem;
   box-shadow: 0 2px 16px rgba(0,0,0,0.2);

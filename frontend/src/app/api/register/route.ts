@@ -4,7 +4,6 @@ import { hashPassword, signToken } from '@/lib/auth';
 import mongoose from 'mongoose';
 
 
-// HIGHLIGHT: Minimal User schema for demonstration
 interface IUser extends mongoose.Document {
   email: string;
   password: string;
@@ -23,14 +22,11 @@ export async function POST(req: Request) {
   if (!email || !password) {
     return NextResponse.json({ error: 'Missing fields' }, { status: 400 });
   }
-  // HIGHLIGHT: Check if user exists
   const existing = await User.findOne({ email });
   if (existing) {
-    return NextResponse.json({ error: 'User already exists' }, { status: 409 });
+  return NextResponse.json({ error: 'User already exists. Use another email.' }, { status: 409 });
   }
-  // HIGHLIGHT: Hash password and create user
   const hashed = await hashPassword(password);
   const user = await User.create({ email, password: hashed });
-  // HIGHLIGHT: Optionally sign a JWT (not returned here)
   return NextResponse.json({ success: true });
 }
